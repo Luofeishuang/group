@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【混子】分组小工具</title>
+</head>
+<body>
+    <h1>Random Grouping</h1>
+    <label for="names">输入每个小可爱的名字:</label><br>
+    <textarea id="names" rows="4" cols="50" >落小满,疾风风,你说梦话,地瓜,浅咲,鹿某某,陆某某的情缘,雪魄霜回,清流,大忽悠,贝果,期满满</textarea><br><br>
+    <button onclick="randomGroup()">点击分组</button>
+
+    <h2>你的天选队友:</h2>
+    <div id="groups"></div>
+
+    <script>
+        function randomGroup() {
+            const namesInput = document.getElementById('names').value;
+            let names = namesInput.split(',').map(name => name.trim()).filter(name => name !== '');
+            const groupsContainer = document.getElementById('groups');
+            groupsContainer.innerHTML = '';
+
+            // Shuffle the names array
+            for (let i = names.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [names[i], names[j]] = [names[j], names[i]];
+            }
+
+            // Create groups of three
+            let groupNumber = 1;
+            while (names.length > 3) {
+                const group = names.splice(0, 3);
+                const groupDiv = document.createElement('div');
+                groupDiv.textContent = `组 ${groupNumber++}: ${group.join(', ')}`;
+                groupsContainer.appendChild(groupDiv);
+            }
+
+            // Add remaining names as a single group
+            if (names.length > 0) {
+                const groupDiv = document.createElement('div');
+                groupDiv.textContent = `组 ${groupNumber++}: ${names.join(', ')}`;
+                groupsContainer.appendChild(groupDiv);
+            }
+        }
+    </script>
+</body>
+</html>
