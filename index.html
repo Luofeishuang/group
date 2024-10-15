@@ -23,13 +23,13 @@
     </style>  
 </head>  
 <body>  
-    <h1>随机激活码生成器</h1>  
+    <h1>雪魄老师的随机激活码生成器</h1>  
     <button onclick="generateCodes()">生成30个激活码</button>  
     <div id="codes"></div>  
   
     <script>  
         function generateRandomCode(length = 12) {  
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';  
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';  
             let code = '';  
             for (let i = 0; i < length; i++) {  
                 const randomIndex = Math.floor(Math.random() * characters.length);  
