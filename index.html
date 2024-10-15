@@ -1,48 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>【混子】分组小工具</title>
-</head>
-<body>
-    <h1>【混子】分组小工具</h1>
-    <label for="names">输入每个小可爱的名字:</label><br>
-    <textarea id="names" rows="4" cols="50" >落小满,疾风风,你说梦话,地瓜,鹿某某,鹿某某的情缘,雪魄霜回,清流,大忽悠,期满满</textarea><br><br>
-    <button onclick="randomGroup()">点击分组</button>
-
-    <h2>你的天选队友:</h2>
-    <div id="groups"></div>
-
-    <script>
-        function randomGroup() {
-            const namesInput = document.getElementById('names').value;
-            let names = namesInput.split(',').map(name => name.trim()).filter(name => name !== '');
-            const groupsContainer = document.getElementById('groups');
-            groupsContainer.innerHTML = '';
-
-            // Shuffle the names array
-            for (let i = names.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [names[i], names[j]] = [names[j], names[i]];
-            }
-
-            // Create groups of three
-            let groupNumber = 1;
-            while (names.length > 3) {
-                const group = names.splice(0, 3);
-                const groupDiv = document.createElement('div');
-                groupDiv.textContent = `组 ${groupNumber++}: ${group.join(', ')}`;
-                groupsContainer.appendChild(groupDiv);
-            }
-
-            // Add remaining names as a single group
-            if (names.length > 0) {
-                const groupDiv = document.createElement('div');
-                groupDiv.textContent = `组 ${groupNumber++}: ${names.join(', ')}`;
-                groupsContainer.appendChild(groupDiv);
-            }
-        }
-    </script>
-</body>
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>随机激活码生成器</title>  
+    <style>  
+        body {  
+            font-family: Arial, sans-serif;  
+            text-align: center;  
+            margin-top: 50px;  
+        }  
+        #codes {  
+            margin-top: 20px;  
+            font-family: monospace;  
+            white-space: pre-wrap; /* 保持换行符 */  
+            word-wrap: break-word; /* 防止长单词溢出 */  
+        }  
+        .code {  
+            display: block;  
+            margin: 5px 0;  
+        }  
+    </style>  
+</head>  
+<body>  
+    <h1>随机激活码生成器</h1>  
+    <button onclick="generateCodes()">生成30个激活码</button>  
+    <div id="codes"></div>  
+  
+    <script>  
+        function generateRandomCode(length = 12) {  
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';  
+            let code = '';  
+            for (let i = 0; i < length; i++) {  
+                const randomIndex = Math.floor(Math.random() * characters.length);  
+                code += characters[randomIndex];  
+            }  
+            return code;  
+        }  
+  
+        function generateCodes() {  
+            const codesDiv = document.getElementById('codes');  
+            codesDiv.innerHTML = ''; // 清空之前的激活码  
+            for (let i = 0; i < 30; i++) {  
+                const codeElement = document.createElement('div');  
+                codeElement.className = 'code';  
+                codeElement.textContent = generateRandomCode();  
+                codesDiv.appendChild(codeElement);  
+            }  
+        }  
+    </script>  
+</body>  
 </html>
