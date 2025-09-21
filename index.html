@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>抽签组队工具</title>
+    <title>组队抽签系统</title>
     <style>
         * {
             box-sizing: border-box;
@@ -14,81 +14,115 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background-color: #f5f5f5;
-            padding: 20px 15px;
+            padding: 15px;
             min-height: 100vh;
         }
 
         .container {
             max-width: 600px;
             margin: 0 auto;
+        }
+
+        .nav-tabs {
+            display: flex;
             background-color: white;
-            border-radius: 12px;
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background-color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .nav-tab.active {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .content {
+            background-color: white;
+            border-radius: 0 0 12px 12px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
+            min-height: 500px;
         }
 
-        h1 {
-            text-align: center;
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        h2 {
             color: #333;
-            margin-bottom: 25px;
-            font-size: 24px;
+            margin-bottom: 20px;
+            font-size: 20px;
         }
 
-        .section {
-            margin-bottom: 25px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            color: #444;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .profession-group {
+        .form-group {
             margin-bottom: 20px;
         }
 
-        .profession-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            gap: 10px;
-        }
-
-        .profession-type {
-            font-size: 16px;
+        label {
+            display: block;
             color: #666;
+            margin-bottom: 8px;
             font-weight: 500;
         }
 
-        .select-all-btn {
-            padding: 4px 12px;
-            font-size: 12px;
-            background-color: #e0e0e0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
         }
 
-        .select-all-btn:active {
-            background-color: #d0d0d0;
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+
+        .profession-select {
+            margin-bottom: 15px;
+        }
+
+        .profession-group {
+            margin-bottom: 15px;
+        }
+
+        .profession-type {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
 
         .tags-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
         }
 
         .tag {
-            padding: 8px 14px;
+            padding: 6px 12px;
             background-color: #e3f2fd;
             border: 1px solid #90caf9;
-            border-radius: 20px;
+            border-radius: 16px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             color: #1976d2;
             transition: all 0.2s;
             user-select: none;
@@ -112,67 +146,116 @@
             border-color: #4caf50;
         }
 
-        .input-section {
-            margin-bottom: 25px;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+        .button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
             font-size: 16px;
-            resize: vertical;
-            font-family: inherit;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
         }
 
-        textarea:focus {
-            outline: none;
-            border-color: #2196f3;
+        .button:hover {
+            background-color: #1976d2;
         }
 
-        .hint {
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .button.success {
+            background-color: #4caf50;
+        }
+
+        .button.danger {
+            background-color: #f44336;
+        }
+
+        .user-list, .signup-list {
+            margin-top: 20px;
+        }
+
+        .user-item, .signup-item {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .user-professions {
             font-size: 12px;
-            color: #888;
-            margin-top: 5px;
+            color: #666;
         }
 
-        .button-container {
+        .user-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .small-button {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .signup-button {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .cancel-button {
+            background-color: #ff5722;
+            color: white;
+        }
+
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .status-bar {
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
             text-align: center;
-            margin: 30px 0;
+            font-size: 14px;
+            color: #1976d2;
+        }
+
+        .draw-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
         }
 
         .draw-button {
             background-color: #ff5722;
             color: white;
-            border: none;
-            padding: 14px 40px;
             font-size: 18px;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
-            transition: all 0.3s;
-        }
-
-        .draw-button:hover {
-            background-color: #f4511e;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(255, 87, 34, 0.4);
-        }
-
-        .draw-button:active {
-            transform: translateY(0);
-        }
-
-        .result-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-
-        .result-section.hidden {
-            display: none;
+            padding: 16px;
+            margin: 20px 0;
         }
 
         .team {
@@ -200,7 +283,7 @@
         .member-name {
             font-weight: 500;
             margin-right: 10px;
-            min-width: 60px;
+            min-width: 80px;
         }
 
         .member-role {
@@ -218,96 +301,132 @@
             background-color: #4caf50;
         }
 
-        .waiting-list {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #fff3e0;
-            border: 1px solid #ffcc80;
+        .hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .message {
+            padding: 12px;
             border-radius: 8px;
-        }
-
-        .waiting-list-header {
-            font-weight: 600;
-            color: #f57c00;
-            margin-bottom: 10px;
-        }
-
-        .waiting-members {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .waiting-member {
-            padding: 6px 12px;
-            background-color: #ffe0b2;
-            border-radius: 6px;
+            margin-bottom: 15px;
             font-size: 14px;
-            color: #e65100;
+        }
+
+        .message.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .message.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
         }
 
         @media (max-width: 480px) {
-            body {
-                padding: 10px;
+            .nav-tab {
+                font-size: 14px;
+                padding: 12px;
             }
             
-            .container {
+            .content {
                 padding: 15px;
             }
             
-            h1 {
-                font-size: 20px;
-            }
-            
             .tag {
-                font-size: 13px;
-                padding: 6px 12px;
+                font-size: 12px;
+                padding: 5px 10px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎯 抽签组队工具</h1>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('register')">用户注册</button>
+            <button class="nav-tab" onclick="switchTab('signup')">活动报名</button>
+            <button class="nav-tab" onclick="switchTab('manage')">用户管理</button>
+        </div>
         
-        <div class="section">
-            <div class="section-title">选择参与抽签的职业</div>
-            
-            <div class="profession-group">
-                <div class="profession-header">
-                    <span class="profession-type">DPS职业</span>
-                    <button class="select-all-btn" onclick="toggleAllDPS()">全选/取消</button>
+        <div class="content">
+            <!-- 注册页面 -->
+            <div id="register-page" class="page active">
+                <h2>用户注册</h2>
+                <div id="register-message"></div>
+                
+                <div class="form-group">
+                    <label for="userId">用户ID</label>
+                    <input type="text" id="userId" placeholder="请输入你的游戏ID">
                 </div>
-                <div class="tags-container" id="dpsContainer">
-                    <!-- DPS职业标签将通过JS生成 -->
+                
+                <div class="profession-select">
+                    <label>选择你的本体职业（可多选）</label>
+                    
+                    <div class="profession-group">
+                        <div class="profession-type">DPS职业</div>
+                        <div class="tags-container" id="register-dps-container">
+                            <!-- DPS职业标签 -->
+                        </div>
+                    </div>
+                    
+                    <div class="profession-group">
+                        <div class="profession-type">奶妈职业</div>
+                        <div class="tags-container" id="register-healer-container">
+                            <!-- 奶妈职业标签 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="button" onclick="registerUser()">注册用户</button>
+            </div>
+            
+            <!-- 报名页面 -->
+            <div id="signup-page" class="page">
+                <h2>活动报名</h2>
+                <div id="signup-message"></div>
+                
+                <div class="status-bar">
+                    当前报名人数：<span id="signup-count">0</span> 人（需要至少6人才能开始抽签）
+                </div>
+                
+                <div class="user-list">
+                    <h3 style="font-size: 16px; margin-bottom: 10px;">可报名用户</h3>
+                    <div id="available-users">
+                        <!-- 可报名用户列表 -->
+                    </div>
+                </div>
+                
+                <div class="signup-list">
+                    <h3 style="font-size: 16px; margin-bottom: 10px;">已报名用户</h3>
+                    <div id="signed-up-users">
+                        <!-- 已报名用户列表 -->
+                    </div>
+                </div>
+                
+                <div class="draw-section">
+                    <button class="button draw-button" id="draw-button" onclick="drawTeams()" disabled>
+                        开始抽签分队
+                    </button>
+                    
+                    <div id="teams-result">
+                        <!-- 抽签结果 -->
+                    </div>
                 </div>
             </div>
             
-            <div class="profession-group">
-                <div class="profession-header">
-                    <span class="profession-type">奶妈职业</span>
-                    <button class="select-all-btn" onclick="toggleAllHealers()">全选/取消</button>
+            <!-- 用户管理页面 -->
+            <div id="manage-page" class="page">
+                <h2>用户管理</h2>
+                <div id="manage-message"></div>
+                
+                <div class="user-list">
+                    <div id="all-users">
+                        <!-- 所有用户列表 -->
+                    </div>
                 </div>
-                <div class="tags-container" id="healerContainer">
-                    <!-- 奶妈职业标签将通过JS生成 -->
-                </div>
-            </div>
-        </div>
-        
-        <div class="input-section">
-            <div class="section-title">参与匹配的ID</div>
-            <textarea id="playerIds" placeholder="请输入参与匹配的ID，用逗号或换行分隔">A, B, C, D, E, F, G, H, I, J, H</textarea>
-            <div class="hint">提示：用逗号或换行分隔每个ID</div>
-        </div>
-        
-        <div class="button-container">
-            <button class="draw-button" onclick="drawTeams()">开始抽签</button>
-        </div>
-        
-        <div id="resultSection" class="result-section hidden">
-            <div class="section-title">抽签结果</div>
-            <div id="teamsContainer">
-                <!-- 抽签结果将在这里显示 -->
             </div>
         </div>
     </div>
@@ -322,189 +441,316 @@
         
         const healerProfessions = ['奶秀', '奶毒', '奶花', '奶歌', '奶药'];
         
-        // 选中的职业
-        let selectedDPS = new Set(dpsProfessions);
-        let selectedHealers = new Set(healerProfessions);
+        // 数据存储
+        let users = JSON.parse(localStorage.getItem('users') || '[]');
+        let signedUpUsers = [];
+        let selectedProfessions = new Set();
         
-        // 初始化职业标签
-        function initProfessionTags() {
-            const dpsContainer = document.getElementById('dpsContainer');
-            const healerContainer = document.getElementById('healerContainer');
+        // 初始化
+        function init() {
+            initRegisterProfessions();
+            updateSignupPage();
+            updateManagePage();
+        }
+        
+        // 切换标签页
+        function switchTab(tab) {
+            // 更新标签样式
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             
-            // 生成DPS标签
-            dpsProfessions.forEach(profession => {
-                const tag = createTag(profession, 'dps');
+            // 激活选中的标签
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-page`).classList.add('active');
+            
+            // 更新页面数据
+            if (tab === 'signup') {
+                updateSignupPage();
+            } else if (tab === 'manage') {
+                updateManagePage();
+            }
+            
+            // 清除消息
+            clearMessages();
+        }
+        
+        // 初始化注册页面的职业选择
+        function initRegisterProfessions() {
+            const dpsContainer = document.getElementById('register-dps-container');
+            const healerContainer = document.getElementById('register-healer-container');
+            
+            dpsContainer.innerHTML = '';
+            healerContainer.innerHTML = '';
+            
+            dpsProfessions.forEach(prof => {
+                const tag = createProfessionTag(prof, 'dps');
                 dpsContainer.appendChild(tag);
             });
             
-            // 生成奶妈标签
-            healerProfessions.forEach(profession => {
-                const tag = createTag(profession, 'healer');
+            healerProfessions.forEach(prof => {
+                const tag = createProfessionTag(prof, 'healer');
                 healerContainer.appendChild(tag);
             });
         }
         
         // 创建职业标签
-        function createTag(profession, type) {
+        function createProfessionTag(profession, type) {
             const tag = document.createElement('div');
-            tag.className = `tag ${type} selected`;
+            tag.className = `tag ${type}`;
             tag.textContent = profession;
-            tag.onclick = () => toggleProfession(profession, type);
+            tag.onclick = () => toggleProfession(profession, tag);
             return tag;
         }
         
-        // 切换职业选中状态
-        function toggleProfession(profession, type) {
-            const selectedSet = type === 'dps' ? selectedDPS : selectedHealers;
-            
-            if (selectedSet.has(profession)) {
-                selectedSet.delete(profession);
+        // 切换职业选择
+        function toggleProfession(profession, tagElement) {
+            if (selectedProfessions.has(profession)) {
+                selectedProfessions.delete(profession);
+                tagElement.classList.remove('selected');
             } else {
-                selectedSet.add(profession);
+                selectedProfessions.add(profession);
+                tagElement.classList.add('selected');
             }
-            
-            updateTagDisplay();
         }
         
-        // 更新标签显示
-        function updateTagDisplay() {
-            const dpsContainer = document.getElementById('dpsContainer');
-            const healerContainer = document.getElementById('healerContainer');
+        // 注册用户
+        function registerUser() {
+            const userId = document.getElementById('userId').value.trim();
             
-            // 更新DPS标签
-            Array.from(dpsContainer.children).forEach(tag => {
-                const profession = tag.textContent;
-                if (selectedDPS.has(profession)) {
-                    tag.classList.add('selected');
-                } else {
-                    tag.classList.remove('selected');
+            if (!userId) {
+                showMessage('register-message', '请输入用户ID', 'error');
+                return;
+            }
+            
+            if (selectedProfessions.size === 0) {
+                showMessage('register-message', '请至少选择一个本体职业', 'error');
+                return;
+            }
+            
+            // 检查用户是否已存在
+            if (users.find(u => u.id === userId)) {
+                showMessage('register-message', '该用户ID已存在', 'error');
+                return;
+            }
+            
+            // 添加新用户
+            const newUser = {
+                id: userId,
+                professions: Array.from(selectedProfessions),
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            // 清空表单
+            document.getElementById('userId').value = '';
+            selectedProfessions.clear();
+            initRegisterProfessions();
+            
+            showMessage('register-message', `用户 ${userId} 注册成功！`, 'success');
+            
+            // 更新其他页面
+            updateSignupPage();
+            updateManagePage();
+        }
+        
+        // 更新报名页面
+        function updateSignupPage() {
+            const availableContainer = document.getElementById('available-users');
+            const signedUpContainer = document.getElementById('signed-up-users');
+            
+            availableContainer.innerHTML = '';
+            signedUpContainer.innerHTML = '';
+            
+            // 显示未报名用户
+            users.forEach(user => {
+                if (!signedUpUsers.find(s => s.id === user.id)) {
+                    const userItem = createUserItem(user, 'available');
+                    availableContainer.appendChild(userItem);
                 }
             });
             
-            // 更新奶妈标签
-            Array.from(healerContainer.children).forEach(tag => {
-                const profession = tag.textContent;
-                if (selectedHealers.has(profession)) {
-                    tag.classList.add('selected');
-                } else {
-                    tag.classList.remove('selected');
-                }
+            // 显示已报名用户
+            signedUpUsers.forEach(user => {
+                const userItem = createUserItem(user, 'signedup');
+                signedUpContainer.appendChild(userItem);
+            });
+            
+            // 更新报名人数和按钮状态
+            document.getElementById('signup-count').textContent = signedUpUsers.length;
+            document.getElementById('draw-button').disabled = signedUpUsers.length < 6;
+            
+            if (availableContainer.children.length === 0 && users.length === 0) {
+                availableContainer.innerHTML = '<p style="color: #999; text-align: center;">暂无注册用户</p>';
+            }
+            
+            if (signedUpContainer.children.length === 0) {
+                signedUpContainer.innerHTML = '<p style="color: #999; text-align: center;">暂无报名用户</p>';
+            }
+        }
+        
+        // 更新管理页面
+        function updateManagePage() {
+            const container = document.getElementById('all-users');
+            container.innerHTML = '';
+            
+            if (users.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">暂无注册用户</p>';
+                return;
+            }
+            
+            users.forEach(user => {
+                const userItem = createUserItem(user, 'manage');
+                container.appendChild(userItem);
             });
         }
         
-        // 全选/取消DPS
-        function toggleAllDPS() {
-            if (selectedDPS.size === dpsProfessions.length) {
-                selectedDPS.clear();
-            } else {
-                selectedDPS = new Set(dpsProfessions);
+        // 创建用户项
+        function createUserItem(user, type) {
+            const item = document.createElement('div');
+            item.className = type === 'signedup' ? 'signup-item' : 'user-item';
+            
+            const info = document.createElement('div');
+            info.className = 'user-info';
+            
+            const name = document.createElement('div');
+            name.className = 'user-name';
+            name.textContent = user.id;
+            
+            const professions = document.createElement('div');
+            professions.className = 'user-professions';
+            professions.textContent = '本体: ' + user.professions.join(', ');
+            
+            info.appendChild(name);
+            info.appendChild(professions);
+            item.appendChild(info);
+            
+            const actions = document.createElement('div');
+            actions.className = 'user-actions';
+            
+            if (type === 'available') {
+                const signupBtn = document.createElement('button');
+                signupBtn.className = 'small-button signup-button';
+                signupBtn.textContent = '报名';
+                signupBtn.onclick = () => signup(user);
+                actions.appendChild(signupBtn);
+            } else if (type === 'signedup') {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'small-button cancel-button';
+                cancelBtn.textContent = '取消报名';
+                cancelBtn.onclick = () => cancelSignup(user.id);
+                actions.appendChild(cancelBtn);
+            } else if (type === 'manage') {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'small-button delete-button';
+                deleteBtn.textContent = '删除';
+                deleteBtn.onclick = () => deleteUser(user.id);
+                actions.appendChild(deleteBtn);
             }
-            updateTagDisplay();
+            
+            item.appendChild(actions);
+            return item;
         }
         
-        // 全选/取消奶妈
-        function toggleAllHealers() {
-            if (selectedHealers.size === healerProfessions.length) {
-                selectedHealers.clear();
-            } else {
-                selectedHealers = new Set(healerProfessions);
-            }
-            updateTagDisplay();
+        // 报名
+        function signup(user) {
+            signedUpUsers.push(user);
+            updateSignupPage();
+            showMessage('signup-message', `${user.id} 报名成功！`, 'success');
         }
         
-        // 随机洗牌算法
-        function shuffle(array) {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
+        // 取消报名
+        function cancelSignup(userId) {
+            signedUpUsers = signedUpUsers.filter(u => u.id !== userId);
+            updateSignupPage();
+            showMessage('signup-message', `${userId} 已取消报名`, 'success');
         }
         
-        // 抽签组队
+        // 删除用户
+        function deleteUser(userId) {
+            if (confirm(`确定要删除用户 ${userId} 吗？`)) {
+                users = users.filter(u => u.id !== userId);
+                signedUpUsers = signedUpUsers.filter(u => u.id !== userId);
+                localStorage.setItem('users', JSON.stringify(users));
+                updateManagePage();
+                updateSignupPage();
+                showMessage('manage-message', `用户 ${userId} 已删除`, 'success');
+            }
+        }
+        
+        // 抽签分队
         function drawTeams() {
-            // 获取参与者ID
-            const idsText = document.getElementById('playerIds').value;
-            const playerIds = idsText.split(/[,，\n]/)
-                .map(id => id.trim())
-                .filter(id => id.length > 0);
-            
-            if (playerIds.length === 0) {
-                alert('请输入参与匹配的ID');
+            if (signedUpUsers.length < 6) {
+                showMessage('signup-message', '报名人数不足6人，无法开始抽签', 'error');
                 return;
             }
             
-            if (selectedDPS.size === 0 || selectedHealers.size === 0) {
-                alert('请至少选择一个DPS职业和一个奶妈职业');
-                return;
-            }
+            // 随机打乱报名用户
+            const shuffled = shuffle([...signedUpUsers]);
             
-            // 随机打乱玩家顺序
-            const shuffledPlayers = shuffle(playerIds);
-            
-            // 计算可以组成的队伍数量
-            const maxTeams = Math.floor(shuffledPlayers.length / 3);
+            // 计算队伍数量
+            const teamCount = Math.floor(shuffled.length / 3);
             const teams = [];
-            const waitingList = [];
             
             // 分配队伍
-            for (let i = 0; i < maxTeams; i++) {
-                const teamMembers = [];
+            for (let i = 0; i < teamCount; i++) {
+                const team = [];
                 
-                // 分配2个DPS
-                for (let j = 0; j < 2; j++) {
-                    if (shuffledPlayers.length > 0) {
-                        const player = shuffledPlayers.shift();
-                        const profession = getRandomProfession('dps');
-                        teamMembers.push({ name: player, role: 'dps', profession });
+                // 每队分配3人：2个DPS + 1个奶妈
+                for (let j = 0; j < 3; j++) {
+                    if (shuffled.length > 0) {
+                        const player = shuffled.shift();
+                        const role = j < 2 ? 'dps' : 'healer';
+                        const assignedProfession = getRandomNonOwnProfession(player, role);
+                        
+                        team.push({
+                            name: player.id,
+                            role: role,
+                            profession: assignedProfession,
+                            ownProfessions: player.professions
+                        });
                     }
                 }
                 
-                // 分配1个奶妈
-                if (shuffledPlayers.length > 0) {
-                    const player = shuffledPlayers.shift();
-                    const profession = getRandomProfession('healer');
-                    teamMembers.push({ name: player, role: 'healer', profession });
-                }
-                
-                if (teamMembers.length === 3) {
-                    teams.push(teamMembers);
-                }
+                teams.push(team);
             }
             
-            // 剩余的玩家进入轮空名单
-            waitingList.push(...shuffledPlayers);
-            
             // 显示结果
-            displayResults(teams, waitingList);
+            displayTeamResults(teams, shuffled);
         }
         
-        // 随机获取职业
-        function getRandomProfession(type) {
-            const professions = type === 'dps' 
-                ? Array.from(selectedDPS) 
-                : Array.from(selectedHealers);
-            return professions[Math.floor(Math.random() * professions.length)];
+        // 获取非本体职业
+        function getRandomNonOwnProfession(player, role) {
+            const allProfessions = role === 'dps' ? dpsProfessions : healerProfessions;
+            
+            // 过滤掉玩家的本体职业
+            const availableProfessions = allProfessions.filter(prof => 
+                !player.professions.includes(prof)
+            );
+            
+            // 如果所有职业都是本体（极端情况），则从所有职业中随机
+            if (availableProfessions.length === 0) {
+                return allProfessions[Math.floor(Math.random() * allProfessions.length)];
+            }
+            
+            // 随机选择一个非本体职业
+            return availableProfessions[Math.floor(Math.random() * availableProfessions.length)];
         }
         
-        // 显示结果
-        function displayResults(teams, waitingList) {
-            const resultSection = document.getElementById('resultSection');
-            const teamsContainer = document.getElementById('teamsContainer');
+        // 显示队伍结果
+        function displayTeamResults(teams, remaining) {
+            const resultContainer = document.getElementById('teams-result');
+            resultContainer.innerHTML = '<h3 style="margin-bottom: 15px;">抽签结果</h3>';
             
-            // 清空之前的结果
-            teamsContainer.innerHTML = '';
-            
-            // 显示队伍
             teams.forEach((team, index) => {
                 const teamDiv = document.createElement('div');
                 teamDiv.className = 'team';
                 
-                const teamHeader = document.createElement('div');
-                teamHeader.className = 'team-header';
-                teamHeader.textContent = `第 ${index + 1} 队`;
-                teamDiv.appendChild(teamHeader);
+                const header = document.createElement('div');
+                header.className = 'team-header';
+                header.textContent = `第 ${index + 1} 队`;
+                teamDiv.appendChild(header);
                 
                 team.forEach(member => {
                     const memberDiv = document.createElement('div');
@@ -523,44 +769,50 @@
                     teamDiv.appendChild(memberDiv);
                 });
                 
-                teamsContainer.appendChild(teamDiv);
+                resultContainer.appendChild(teamDiv);
             });
             
-            // 显示轮空名单
-            if (waitingList.length > 0) {
+            // 显示轮空人员
+            if (remaining.length > 0) {
                 const waitingDiv = document.createElement('div');
-                waitingDiv.className = 'waiting-list';
-                
-                const waitingHeader = document.createElement('div');
-                waitingHeader.className = 'waiting-list-header';
-                waitingHeader.textContent = '轮空名单';
-                waitingDiv.appendChild(waitingHeader);
-                
-                const membersDiv = document.createElement('div');
-                membersDiv.className = 'waiting-members';
-                
-                waitingList.forEach(player => {
-                    const memberSpan = document.createElement('span');
-                    memberSpan.className = 'waiting-member';
-                    memberSpan.textContent = player;
-                    membersDiv.appendChild(memberSpan);
-                });
-                
-                waitingDiv.appendChild(membersDiv);
-                teamsContainer.appendChild(waitingDiv);
+                waitingDiv.style.marginTop = '20px';
+                waitingDiv.innerHTML = `<strong>轮空人员：</strong> ${remaining.map(r => r.id).join(', ')}`;
+                resultContainer.appendChild(waitingDiv);
             }
+        }
+        
+        // 洗牌算法
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        
+        // 显示消息
+        function showMessage(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
             
-            // 显示结果区域
-            resultSection.classList.remove('hidden');
-            
-            // 滚动到结果区域
-            resultSection.scrollIntoView({ behavior: 'smooth' });
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 3000);
+        }
+        
+        // 清除所有消息
+        function clearMessages() {
+            document.getElementById('register-message').innerHTML = '';
+            document.getElementById('signup-message').innerHTML = '';
+            document.getElementById('manage-message').innerHTML = '';
         }
         
         // 页面加载时初始化
-        window.onload = () => {
-            initProfessionTags();
-        };
+        window.onload = init;
     </script>
 </body>
 </html>
+
+
+这个系统可以直接保存为HTML文件使用，所有数据都保存在浏览器本地，无需服务器支持。如果需要进一步的功能调整或优化，请随时告诉我！
