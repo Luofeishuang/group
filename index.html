@@ -380,6 +380,40 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .waiting-list {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+        }
+
+        .waiting-list-header {
+            font-weight: 600;
+            color: #f57c00;
+            margin-bottom: 10px;
+        }
+
+        .pool-info {
+            background-color: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .nav-tab {
+                font-size: 14px;
+                padding: 12px;
+            }
+            
+            .tag {
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -427,7 +461,7 @@
                 <h2>活动报名</h2>
                 <div id="signup-message"></div>
                 
-                <div class="status-bar">
+                <div id="signup-status" class="status-bar">
                     当前报名人数：<span id="signup-count">0</span> 人（需要至少6人才能开始抽签）
                 </div>
                 
@@ -446,6 +480,10 @@
                 <div class="draw-section">
                     <button class="button draw-button" id="draw-button" onclick="drawTeams()" disabled>
                         开始抽签分队
+                    </button>
+                    
+                    <button class="button danger" onclick="clearAllSignups()" style="margin-top: 10px;">
+                        清空所有报名
                     </button>
                     
                     <div id="teams-result"></div>
@@ -475,16 +513,14 @@
                 <li>将配置信息填入下面的代码中</li>
             </ol>
             <pre>
-
 const firebaseConfig = {
-    apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
-    authDomain: "user-ba917.firebaseapp.com",
-    databaseURL: "https://user-ba917-default-rtdb.firebaseio.com",
-    projectId: "user-ba917",
-    storageBucket: "user-ba917.firebasestorage.app",
-    messagingSenderId: "648289853069",
-    appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
-    measurementId: "G-WBWQGDDMZ5"
+    apiKey: "你的API密钥",
+    authDomain: "你的项目.firebaseapp.com",
+    databaseURL: "你的数据库URL",
+    projectId: "你的项目ID",
+    storageBucket: "你的存储桶",
+    messagingSenderId: "发送者ID",
+    appId: "应用ID"
 };
             </pre>
         </div>
@@ -494,14 +530,13 @@ const firebaseConfig = {
         // Firebase配置 - 请替换为你自己的配置
         const firebaseConfig = {
             // 在这里填入你的Firebase配置
-            apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
-            authDomain: "user-ba917.firebaseapp.com",
-            databaseURL: "https://user-ba917-default-rtdb.firebaseio.com",
-            projectId: "user-ba917",
-            storageBucket: "user-ba917.firebasestorage.app",
-            messagingSenderId: "648289853069",
-            appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
-            measurementId: "G-WBWQGDDMZ5"
+          apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
+          authDomain: "user-ba917.firebaseapp.com",
+          databaseURL: "https://user-ba917-default-rtdb.firebaseio.com",
+          projectId: "user-ba917",
+          storageBucket: "user-ba917.firebasestorage.app",
+          messagingSenderId: "648289853069",
+          appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
         };
 
         // 职业数据
@@ -682,6 +717,10 @@ const firebaseConfig = {
             availableContainer.innerHTML = '';
             signedUpContainer.innerHTML = '';
             
+            // 统计已报名用户的职业
+            const signedUpDPS = new Set();
+            const signedUpHealers = new Set();
+            
             // 显示未报名用户
             Object.entries(users).forEach(([userId, userData]) => {
                 if (!signedUpUsers[userId]) {
@@ -690,18 +729,39 @@ const firebaseConfig = {
                 }
             });
             
-            // 显示已报名用户
-            Object.entries(signedUpUsers).forEach(([userId, value]) => {
+            // 显示已报名用户并统计职业
+            Object.entries(signedUpUsers).forEach(([userId, signupData]) => {
                 if (users[userId]) {
                     const userItem = createUserItem(userId, users[userId], 'signedup');
                     signedUpContainer.appendChild(userItem);
+                    
+                    // 统计职业
+                    users[userId].professions.forEach(prof => {
+                        if (dpsProfessions.includes(prof)) {
+                            signedUpDPS.add(prof);
+                        } else if (healerProfessions.includes(prof)) {
+                            signedUpHealers.add(prof);
+                        }
+                    });
                 }
             });
             
             // 更新报名人数和按钮状态
             const signupCount = Object.keys(signedUpUsers).length;
-            document.getElementById('signup-count').textContent = signupCount;
             document.getElementById('draw-button').disabled = signupCount < 6;
+            
+            // 更新状态栏
+            const statusBar = document.getElementById('signup-status');
+            let professionStats = '';
+            if (signedUpDPS.size > 0 || signedUpHealers.size > 0) {
+                professionStats = `<div style="font-size: 12px; margin-top: 5px;">
+                    已报名心法池：DPS ${signedUpDPS.size} 个，奶妈 ${signedUpHealers.size} 个
+                </div>`;
+            }
+            statusBar.innerHTML = `
+                当前报名人数：<span id="signup-count">${signupCount}</span> 人（需要至少6人才能开始抽签）
+                ${professionStats}
+            `;
             
             if (availableContainer.children.length === 0) {
                 availableContainer.innerHTML = '<p style="color: #999; text-align: center;">暂无可报名用户</p>';
@@ -775,10 +835,13 @@ const firebaseConfig = {
             return item;
         }
         
-        // 报名
+        // 报名 - 保存到数据库
         async function signup(userId) {
             try {
-                await signupsRef.child(userId).set(true);
+                await signupsRef.child(userId).set({
+                    signedUpAt: firebase.database.ServerValue.TIMESTAMP,
+                    userId: userId
+                });
                 showMessage('signup-message', `${userId} 报名成功！`, 'success');
             } catch (error) {
                 console.error('报名失败:', error);
@@ -786,7 +849,7 @@ const firebaseConfig = {
             }
         }
         
-        // 取消报名
+        // 取消报名 - 从数据库删除
         async function cancelSignup(userId) {
             try {
                 await signupsRef.child(userId).remove();
@@ -811,7 +874,20 @@ const firebaseConfig = {
             }
         }
         
-        // 抽签分队
+        // 清空所有报名
+        async function clearAllSignups() {
+            if (confirm('确定要清空所有报名吗？这将取消所有用户的报名状态。')) {
+                try {
+                    await signupsRef.remove();
+                    showMessage('signup-message', '已清空所有报名', 'success');
+                } catch (error) {
+                    console.error('清空报名失败:', error);
+                    showMessage('signup-message', '清空失败，请重试', 'error');
+                }
+            }
+        }
+        
+        // 抽签分队 - 使用已报名用户的心法池
         function drawTeams() {
             const signedUpUsersList = Object.keys(signedUpUsers).map(userId => ({
                 id: userId,
@@ -822,6 +898,29 @@ const firebaseConfig = {
                 showMessage('signup-message', '报名人数不足6人，无法开始抽签', 'error');
                 return;
             }
+            
+            // 收集所有已报名用户的本体职业，建立职业池
+            const availableDPSPool = new Set();
+            const availableHealerPool = new Set();
+            
+            signedUpUsersList.forEach(user => {
+                user.professions.forEach(prof => {
+                    if (dpsProfessions.includes(prof)) {
+                        availableDPSPool.add(prof);
+                    } else if (healerProfessions.includes(prof)) {
+                        availableHealerPool.add(prof);
+                    }
+                });
+            });
+            
+            // 检查职业池是否足够
+            if (availableDPSPool.size === 0 || availableHealerPool.size === 0) {
+                showMessage('signup-message', '报名用户的职业类型不足，需要至少有DPS和奶妈职业', 'error');
+                return;
+            }
+            
+            console.log('DPS职业池:', Array.from(availableDPSPool));
+            console.log('奶妈职业池:', Array.from(availableHealerPool));
             
             // 随机打乱报名用户
             const shuffled = shuffle([...signedUpUsersList]);
@@ -839,12 +938,18 @@ const firebaseConfig = {
                     if (shuffled.length > 0) {
                         const player = shuffled.shift();
                         const role = j < 2 ? 'dps' : 'healer';
-                        const assignedProfession = getRandomNonOwnProfession(player, role);
+                        const assignedProfession = getRandomFromPool(
+                            player, 
+                            role, 
+                            availableDPSPool, 
+                            availableHealerPool
+                        );
                         
                         team.push({
                             name: player.id,
                             role: role,
-                            profession: assignedProfession
+                            profession: assignedProfession,
+                            ownProfessions: player.professions
                         });
                     }
                 }
@@ -852,35 +957,59 @@ const firebaseConfig = {
                 teams.push(team);
             }
             
-            // 显示结果
-            displayTeamResults(teams, shuffled);
+            // 显示结果，包括职业池信息
+            displayTeamResultsWithPool(teams, shuffled, availableDPSPool, availableHealerPool);
         }
         
-        // 获取非本体职业
-        function getRandomNonOwnProfession(player, role) {
-            const allProfessions = role === 'dps' ? dpsProfessions : healerProfessions;
+        // 从职业池中随机选择非本体职业
+        function getRandomFromPool(player, role, dpsPool, healerPool) {
+            const pool = role === 'dps' ? Array.from(dpsPool) : Array.from(healerPool);
             
             // 过滤掉玩家的本体职业
-            const availableProfessions = allProfessions.filter(prof => 
+            const availableProfessions = pool.filter(prof => 
                 !player.professions.includes(prof)
             );
             
-            // 如果所有职业都是本体，则从所有职业中随机
+            // 如果过滤后没有可选职业（比如玩家拥有池中所有职业），则从整个池中随机
             if (availableProfessions.length === 0) {
-                return allProfessions[Math.floor(Math.random() * allProfessions.length)];
+                console.warn(`警告：${player.id} 拥有${role}池中的所有职业，将随机分配`);
+                return pool[Math.floor(Math.random() * pool.length)];
             }
             
             return availableProfessions[Math.floor(Math.random() * availableProfessions.length)];
         }
         
-        // 显示队伍结果
-        function displayTeamResults(teams, remaining) {
+        // 显示队伍结果，包含职业池信息
+        function displayTeamResultsWithPool(teams, remaining, dpsPool, healerPool) {
             const resultContainer = document.getElementById('teams-result');
-            resultContainer.innerHTML = '<h3 style="margin-bottom: 15px;">抽签结果</h3>';
+            resultContainer.innerHTML = '';
             
+            // 显示职业池信息
+            const poolInfo = document.createElement('div');
+            poolInfo.className = 'pool-info';
+            poolInfo.innerHTML = `
+                <h4 style="margin-bottom: 10px; color: #2e7d32;">本次抽签职业池</h4>
+                <div style="margin-bottom: 8px;">
+                    <strong>DPS职业：</strong>${Array.from(dpsPool).join('、')}
+                </div>
+                <div>
+                    <strong>奶妈职业：</strong>${Array.from(healerPool).join('、')}
+                </div>
+            `;
+            resultContainer.appendChild(poolInfo);
+            
+            // 显示抽签结果标题
+            const title = document.createElement('h3');
+            title.style.cssText = 'margin: 20px 0 15px 0; font-size: 18px;';
+            title.textContent = '抽签结果';
+            resultContainer.appendChild(title);
+            
+            // 显示各队伍
             teams.forEach((team, index) => {
                 const teamDiv = document.createElement('div');
                 teamDiv.className = 'team';
+                teamDiv.style.animation = `slideIn 0.3s ease-out ${index * 0.1}s`;
+                teamDiv.style.animationFillMode = 'both';
                 
                 const header = document.createElement('div');
                 header.className = 'team-header';
@@ -899,6 +1028,11 @@ const firebaseConfig = {
                     roleSpan.className = `member-role ${member.role}`;
                     roleSpan.textContent = member.profession;
                     
+                    // 如果分配的是自己的本体职业，添加提示
+                    if (member.ownProfessions.includes(member.profession)) {
+                        roleSpan.textContent += ' (本体)';
+                    }
+                    
                     memberDiv.appendChild(nameSpan);
                     memberDiv.appendChild(roleSpan);
                     teamDiv.appendChild(memberDiv);
@@ -910,13 +1044,16 @@ const firebaseConfig = {
             // 显示轮空人员
             if (remaining.length > 0) {
                 const waitingDiv = document.createElement('div');
-                waitingDiv.style.marginTop = '20px';
-                waitingDiv.style.padding = '15px';
-                waitingDiv.style.background = '#fff3e0';
-                waitingDiv.style.borderRadius = '8px';
-                waitingDiv.innerHTML = `<strong>轮空人员：</strong> ${remaining.map(r => r.id).join(', ')}`;
+                waitingDiv.className = 'waiting-list';
+                waitingDiv.innerHTML = `
+                    <div class="waiting-list-header">轮空人员</div>
+                    <div>${remaining.map(r => r.id).join('、')}</div>
+                `;
                 resultContainer.appendChild(waitingDiv);
             }
+            
+            // 滚动到结果
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         
         // 洗牌算法
