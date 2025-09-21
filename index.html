@@ -192,6 +192,7 @@
             animation: slideIn 0.3s ease-out;
         }
 
+
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -414,6 +415,131 @@
                 padding: 5px 10px;
             }
         }
+        /* 规则页面样式 */
+        .rules-section {
+            margin-bottom: 30px;
+        }
+
+        .rules-section h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .rules-list {
+            margin-left: 20px;
+        }
+
+        .rules-list li {
+            margin-bottom: 20px;
+        }
+
+        .rules-list li strong {
+            color: #2196f3;
+            font-size: 16px;
+        }
+
+        .rules-list li p {
+            margin-top: 5px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .rule-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .rule-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .rule-content h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .rule-content ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .rule-content ul li {
+            margin-bottom: 5px;
+        }
+
+        .rule-highlight {
+            background-color: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .rule-highlight h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .rule-warning {
+            background-color: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .rule-warning h4 {
+            color: #f57c00;
+            margin-bottom: 10px;
+        }
+
+        .profession-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .profession-category {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .profession-category h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .profession-list {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #666;
+        }
+
+        .rules-footer {
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            color: #1976d2;
+        }
+
+        @media (max-width: 600px) {
+            .profession-display {
+                grid-template-columns: 1fr;
+            }
+            
+            .rule-card {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -422,6 +548,7 @@
             <button class="nav-tab active" onclick="switchTab('register')">用户注册</button>
             <button class="nav-tab" onclick="switchTab('signup')">活动报名</button>
             <button class="nav-tab" onclick="switchTab('manage')">用户管理</button>
+            <button class="nav-tab" onclick="switchTab('rules')">活动规则</button>
         </div>
         
         <div class="content">
@@ -489,7 +616,90 @@
                     <div id="teams-result"></div>
                 </div>
             </div>
-            
+            <!-- 规则说明页面 -->
+            <div id="rules-page" class="page">
+                <h2>📖 活动规则说明</h2>
+                
+                <div class="rules-section">
+                    <h3>一、参与流程</h3>
+                    <ol class="rules-list">
+                        <li>
+                            <strong>用户注册</strong>
+                            <p>新玩家需要先注册，填写游戏ID并选择自己会玩的本体职业（心法）。可以选择多个职业。</p>
+                        </li>
+                        <li>
+                            <strong>活动报名</strong>
+                            <p>已注册的玩家可以在"活动报名"页面点击报名按钮参与本次活动。</p>
+                        </li>
+                        <li>
+                            <strong>等待开组</strong>
+                            <p>当报名人数达到6人或以上时，即可开始抽签分队。</p>
+                        </li>
+                    </ol>
+                </div>
+                
+                <div class="rules-section">
+                    <h3>二、组队配置</h3>
+                    <div class="rule-card">
+                        <div class="rule-icon">👥</div>
+                        <div class="rule-content">
+                            <h4>标准配置</h4>
+                            <p>每个队伍固定<strong>3人</strong>配置：</p>
+                            <ul>
+                                <li>🗡️ 2名DPS（输出职业）</li>
+                                <li>💚 1名奶妈（治疗职业）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rules-section">
+                    <h3>三、抽签机制</h3>
+                    <div class="rule-highlight">
+                        <h4>🎲 智能职业分配</h4>
+                        <p>系统会收集所有报名玩家的本体职业，组成职业池。抽签时：</p>
+                        <ul>
+                            <li>优先分配<strong>非本体职业</strong>，让大家体验不同的玩法</li>
+                            <li>只会分配职业池中的职业</li>
+                            <li>随机分组，确保公平性</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="rules-section">
+                    <h3>四、特殊情况</h3>
+                    <div class="rule-warning">
+                        <h4>⚠️ 注意事项</h4>
+                        <ul>
+                            <li><strong>人数不足</strong>：报名人数不足6人时无法开始抽签</li>
+                            <li><strong>轮空机制</strong>：当人数不是3的倍数时，多余的玩家会轮空，等待下次活动</li>
+                            <li><strong>本体冲突</strong>：如果玩家拥有职业池中的所有职业，可能会被分配到本体职业（会特别标注）</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="rules-section">
+                    <h3>五、职业分类</h3>
+                    <div class="profession-display">
+                        <div class="profession-category">
+                            <h4>🗡️ DPS职业</h4>
+                            <div class="profession-list">
+                                和尚、冰心、花间游、气纯、剑纯、天策、藏剑、毒经、鲸鱼、田螺、明教、丐帮、苍云、莫问、霸刀、蓬莱、凌雪、衍天、无方、刀宗、万灵、段氏
+                            </div>
+                        </div>
+                        <div class="profession-category">
+                            <h4>💚 奶妈职业</h4>
+                            <div class="profession-list">
+                                奶秀、奶毒、奶花、奶歌、奶药
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rules-footer">
+                    <p>💡 <strong>最后</strong>:Peace&Love，希望大家快乐竞技呦</p>
+                </div>
+            </div>
             <!-- 用户管理页面 -->
             <div id="manage-page" class="page">
                 <h2>用户管理</h2>
