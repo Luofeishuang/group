@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>组队抽签系统</title>
+    <title>组队抽签系统 - Firebase版</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <style>
         * {
             box-sizing: border-box;
@@ -12,7 +17,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #f5f5f5;
             padding: 15px;
             min-height: 100vh;
@@ -93,10 +98,6 @@
         input[type="text"]:focus {
             outline: none;
             border-color: #2196f3;
-        }
-
-        .profession-select {
-            margin-bottom: 15px;
         }
 
         .profession-group {
@@ -188,6 +189,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .user-info {
@@ -244,10 +257,9 @@
             color: #1976d2;
         }
 
-        .draw-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
+        .status-bar.online {
+            background-color: #e8f5e9;
+            color: #2e7d32;
         }
 
         .draw-button {
@@ -301,17 +313,17 @@
             background-color: #4caf50;
         }
 
-        .hint {
-            font-size: 12px;
-            color: #888;
-            margin-top: 5px;
-        }
-
         .message {
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 15px;
             font-size: 14px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .message.success {
@@ -326,20 +338,47 @@
             border: 1px solid #ef9a9a;
         }
 
-        @media (max-width: 480px) {
-            .nav-tab {
-                font-size: 14px;
-                padding: 12px;
-            }
-            
-            .content {
-                padding: 15px;
-            }
-            
-            .tag {
-                font-size: 12px;
-                padding: 5px 10px;
-            }
+        .firebase-config {
+            background-color: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .firebase-config h3 {
+            color: #f57c00;
+            margin-bottom: 10px;
+        }
+
+        .firebase-config pre {
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2196f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -352,6 +391,10 @@
         </div>
         
         <div class="content">
+            <div id="connection-status" class="status-bar">
+                <div class="spinner"></div> 正在连接Firebase...
+            </div>
+            
             <!-- 注册页面 -->
             <div id="register-page" class="page active">
                 <h2>用户注册</h2>
@@ -367,16 +410,12 @@
                     
                     <div class="profession-group">
                         <div class="profession-type">DPS职业</div>
-                        <div class="tags-container" id="register-dps-container">
-                            <!-- DPS职业标签 -->
-                        </div>
+                        <div class="tags-container" id="register-dps-container"></div>
                     </div>
                     
                     <div class="profession-group">
                         <div class="profession-type">奶妈职业</div>
-                        <div class="tags-container" id="register-healer-container">
-                            <!-- 奶妈职业标签 -->
-                        </div>
+                        <div class="tags-container" id="register-healer-container"></div>
                     </div>
                 </div>
                 
@@ -394,16 +433,14 @@
                 
                 <div class="user-list">
                     <h3 style="font-size: 16px; margin-bottom: 10px;">可报名用户</h3>
-                    <div id="available-users">
-                        <!-- 可报名用户列表 -->
+                    <div id="available-users" class="loading">
+                        <div class="spinner"></div> 加载中...
                     </div>
                 </div>
                 
                 <div class="signup-list">
                     <h3 style="font-size: 16px; margin-bottom: 10px;">已报名用户</h3>
-                    <div id="signed-up-users">
-                        <!-- 已报名用户列表 -->
-                    </div>
+                    <div id="signed-up-users"></div>
                 </div>
                 
                 <div class="draw-section">
@@ -411,9 +448,7 @@
                         开始抽签分队
                     </button>
                     
-                    <div id="teams-result">
-                        <!-- 抽签结果 -->
-                    </div>
+                    <div id="teams-result"></div>
                 </div>
             </div>
             
@@ -423,15 +458,50 @@
                 <div id="manage-message"></div>
                 
                 <div class="user-list">
-                    <div id="all-users">
-                        <!-- 所有用户列表 -->
+                    <div id="all-users" class="loading">
+                        <div class="spinner"></div> 加载中...
                     </div>
                 </div>
             </div>
         </div>
+        
+        <div class="firebase-config" id="firebase-config" style="display: none;">
+            <h3>⚠️ Firebase配置错误</h3>
+            <p>请在代码中配置你的Firebase项目信息。步骤如下：</p>
+            <ol style="margin: 10px 0 10px 20px;">
+                <li>访问 <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
+                <li>创建或选择一个项目</li>
+                <li>在项目设置中获取配置信息</li>
+                <li>将配置信息填入下面的代码中</li>
+            </ol>
+            <pre>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
+  authDomain: "user-ba917.firebaseapp.com",
+  projectId: "user-ba917",
+  storageBucket: "user-ba917.firebasestorage.app",
+  messagingSenderId: "648289853069",
+  appId: "1:648289853069:web:248e6004075a7488928cc4",
+  measurementId: "G-KGV5KPDR59"
+};
+            </pre>
+        </div>
     </div>
 
     <script>
+        // Firebase配置 - 请替换为你自己的配置
+        const firebaseConfig = {
+            // 在这里填入你的Firebase配置
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
         // 职业数据
         const dpsProfessions = [
             '和尚', '冰心', '花间游', '气纯', '剑纯', '天策', '藏剑', '毒经', 
@@ -441,36 +511,80 @@
         
         const healerProfessions = ['奶秀', '奶毒', '奶花', '奶歌', '奶药'];
         
-        // 数据存储
-        let users = JSON.parse(localStorage.getItem('users') || '[]');
-        let signedUpUsers = [];
+        // 全局变量
+        let database;
+        let usersRef;
+        let signupsRef;
         let selectedProfessions = new Set();
+        let users = {};
+        let signedUpUsers = {};
         
-        // 初始化
+        // 初始化Firebase
+        function initFirebase() {
+            try {
+                // 检查配置是否已修改
+                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                    document.getElementById('firebase-config').style.display = 'block';
+                    document.getElementById('connection-status').innerHTML = 
+                        '<span style="color: #f44336;">❌ 请先配置Firebase</span>';
+                    return false;
+                }
+                
+                // 初始化Firebase
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                usersRef = database.ref('users');
+                signupsRef = database.ref('signups');
+                
+                // 监听连接状态
+                database.ref('.info/connected').on('value', (snapshot) => {
+                    const connected = snapshot.val();
+                    const statusEl = document.getElementById('connection-status');
+                    if (connected) {
+                        statusEl.className = 'status-bar online';
+                        statusEl.innerHTML = '✅ 已连接到Firebase';
+                    } else {
+                        statusEl.className = 'status-bar';
+                        statusEl.innerHTML = '❌ 连接已断开';
+                    }
+                });
+                
+                // 监听用户数据变化
+                usersRef.on('value', (snapshot) => {
+                    users = snapshot.val() || {};
+                    updateAllPages();
+                });
+                
+                // 监听报名数据变化
+                signupsRef.on('value', (snapshot) => {
+                    signedUpUsers = snapshot.val() || {};
+                    updateSignupPage();
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('Firebase初始化失败:', error);
+                document.getElementById('connection-status').innerHTML = 
+                    '<span style="color: #f44336;">❌ Firebase初始化失败</span>';
+                return false;
+            }
+        }
+        
+        // 初始化页面
         function init() {
-            initRegisterProfessions();
-            updateSignupPage();
-            updateManagePage();
+            if (initFirebase()) {
+                initRegisterProfessions();
+            }
         }
         
         // 切换标签页
         function switchTab(tab) {
-            // 更新标签样式
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             
-            // 激活选中的标签
             event.target.classList.add('active');
             document.getElementById(`${tab}-page`).classList.add('active');
             
-            // 更新页面数据
-            if (tab === 'signup') {
-                updateSignupPage();
-            } else if (tab === 'manage') {
-                updateManagePage();
-            }
-            
-            // 清除消息
             clearMessages();
         }
         
@@ -514,7 +628,7 @@
         }
         
         // 注册用户
-        function registerUser() {
+        async function registerUser() {
             const userId = document.getElementById('userId').value.trim();
             
             if (!userId) {
@@ -528,29 +642,32 @@
             }
             
             // 检查用户是否已存在
-            if (users.find(u => u.id === userId)) {
+            if (users[userId]) {
                 showMessage('register-message', '该用户ID已存在', 'error');
                 return;
             }
             
-            // 添加新用户
-            const newUser = {
-                id: userId,
-                professions: Array.from(selectedProfessions),
-                createdAt: new Date().toISOString()
-            };
-            
-            users.push(newUser);
-            localStorage.setItem('users', JSON.stringify(users));
-            
-            // 清空表单
-            document.getElementById('userId').value = '';
-            selectedProfessions.clear();
-            initRegisterProfessions();
-            
-            showMessage('register-message', `用户 ${userId} 注册成功！`, 'success');
-            
-            // 更新其他页面
+            try {
+                // 添加新用户到Firebase
+                await usersRef.child(userId).set({
+                    professions: Array.from(selectedProfessions),
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                // 清空表单
+                document.getElementById('userId').value = '';
+                selectedProfessions.clear();
+                initRegisterProfessions();
+                
+                showMessage('register-message', `用户 ${userId} 注册成功！`, 'success');
+            } catch (error) {
+                console.error('注册失败:', error);
+                showMessage('register-message', '注册失败，请重试', 'error');
+            }
+        }
+        
+        // 更新所有页面
+        function updateAllPages() {
             updateSignupPage();
             updateManagePage();
         }
@@ -564,25 +681,28 @@
             signedUpContainer.innerHTML = '';
             
             // 显示未报名用户
-            users.forEach(user => {
-                if (!signedUpUsers.find(s => s.id === user.id)) {
-                    const userItem = createUserItem(user, 'available');
+            Object.entries(users).forEach(([userId, userData]) => {
+                if (!signedUpUsers[userId]) {
+                    const userItem = createUserItem(userId, userData, 'available');
                     availableContainer.appendChild(userItem);
                 }
             });
             
             // 显示已报名用户
-            signedUpUsers.forEach(user => {
-                const userItem = createUserItem(user, 'signedup');
-                signedUpContainer.appendChild(userItem);
+            Object.entries(signedUpUsers).forEach(([userId, value]) => {
+                if (users[userId]) {
+                    const userItem = createUserItem(userId, users[userId], 'signedup');
+                    signedUpContainer.appendChild(userItem);
+                }
             });
             
             // 更新报名人数和按钮状态
-            document.getElementById('signup-count').textContent = signedUpUsers.length;
-            document.getElementById('draw-button').disabled = signedUpUsers.length < 6;
+            const signupCount = Object.keys(signedUpUsers).length;
+            document.getElementById('signup-count').textContent = signupCount;
+            document.getElementById('draw-button').disabled = signupCount < 6;
             
-            if (availableContainer.children.length === 0 && users.length === 0) {
-                availableContainer.innerHTML = '<p style="color: #999; text-align: center;">暂无注册用户</p>';
+            if (availableContainer.children.length === 0) {
+                availableContainer.innerHTML = '<p style="color: #999; text-align: center;">暂无可报名用户</p>';
             }
             
             if (signedUpContainer.children.length === 0) {
@@ -595,19 +715,19 @@
             const container = document.getElementById('all-users');
             container.innerHTML = '';
             
-            if (users.length === 0) {
+            if (Object.keys(users).length === 0) {
                 container.innerHTML = '<p style="color: #999; text-align: center;">暂无注册用户</p>';
                 return;
             }
             
-            users.forEach(user => {
-                const userItem = createUserItem(user, 'manage');
+            Object.entries(users).forEach(([userId, userData]) => {
+                const userItem = createUserItem(userId, userData, 'manage');
                 container.appendChild(userItem);
             });
         }
         
         // 创建用户项
-        function createUserItem(user, type) {
+        function createUserItem(userId, userData, type) {
             const item = document.createElement('div');
             item.className = type === 'signedup' ? 'signup-item' : 'user-item';
             
@@ -616,11 +736,11 @@
             
             const name = document.createElement('div');
             name.className = 'user-name';
-            name.textContent = user.id;
+            name.textContent = userId;
             
             const professions = document.createElement('div');
             professions.className = 'user-professions';
-            professions.textContent = '本体: ' + user.professions.join(', ');
+            professions.textContent = '本体: ' + userData.professions.join(', ');
             
             info.appendChild(name);
             info.appendChild(professions);
@@ -633,19 +753,19 @@
                 const signupBtn = document.createElement('button');
                 signupBtn.className = 'small-button signup-button';
                 signupBtn.textContent = '报名';
-                signupBtn.onclick = () => signup(user);
+                signupBtn.onclick = () => signup(userId);
                 actions.appendChild(signupBtn);
             } else if (type === 'signedup') {
                 const cancelBtn = document.createElement('button');
                 cancelBtn.className = 'small-button cancel-button';
                 cancelBtn.textContent = '取消报名';
-                cancelBtn.onclick = () => cancelSignup(user.id);
+                cancelBtn.onclick = () => cancelSignup(userId);
                 actions.appendChild(cancelBtn);
             } else if (type === 'manage') {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'small-button delete-button';
                 deleteBtn.textContent = '删除';
-                deleteBtn.onclick = () => deleteUser(user.id);
+                deleteBtn.onclick = () => deleteUser(userId);
                 actions.appendChild(deleteBtn);
             }
             
@@ -654,40 +774,55 @@
         }
         
         // 报名
-        function signup(user) {
-            signedUpUsers.push(user);
-            updateSignupPage();
-            showMessage('signup-message', `${user.id} 报名成功！`, 'success');
+        async function signup(userId) {
+            try {
+                await signupsRef.child(userId).set(true);
+                showMessage('signup-message', `${userId} 报名成功！`, 'success');
+            } catch (error) {
+                console.error('报名失败:', error);
+                showMessage('signup-message', '报名失败，请重试', 'error');
+            }
         }
         
         // 取消报名
-        function cancelSignup(userId) {
-            signedUpUsers = signedUpUsers.filter(u => u.id !== userId);
-            updateSignupPage();
-            showMessage('signup-message', `${userId} 已取消报名`, 'success');
+        async function cancelSignup(userId) {
+            try {
+                await signupsRef.child(userId).remove();
+                showMessage('signup-message', `${userId} 已取消报名`, 'success');
+            } catch (error) {
+                console.error('取消报名失败:', error);
+                showMessage('signup-message', '取消失败，请重试', 'error');
+            }
         }
         
         // 删除用户
-        function deleteUser(userId) {
+        async function deleteUser(userId) {
             if (confirm(`确定要删除用户 ${userId} 吗？`)) {
-                users = users.filter(u => u.id !== userId);
-                signedUpUsers = signedUpUsers.filter(u => u.id !== userId);
-                localStorage.setItem('users', JSON.stringify(users));
-                updateManagePage();
-                updateSignupPage();
-                showMessage('manage-message', `用户 ${userId} 已删除`, 'success');
+                try {
+                    await usersRef.child(userId).remove();
+                    await signupsRef.child(userId).remove();
+                    showMessage('manage-message', `用户 ${userId} 已删除`, 'success');
+                } catch (error) {
+                    console.error('删除失败:', error);
+                    showMessage('manage-message', '删除失败，请重试', 'error');
+                }
             }
         }
         
         // 抽签分队
         function drawTeams() {
-            if (signedUpUsers.length < 6) {
+            const signedUpUsersList = Object.keys(signedUpUsers).map(userId => ({
+                id: userId,
+                ...users[userId]
+            }));
+            
+            if (signedUpUsersList.length < 6) {
                 showMessage('signup-message', '报名人数不足6人，无法开始抽签', 'error');
                 return;
             }
             
             // 随机打乱报名用户
-            const shuffled = shuffle([...signedUpUsers]);
+            const shuffled = shuffle([...signedUpUsersList]);
             
             // 计算队伍数量
             const teamCount = Math.floor(shuffled.length / 3);
@@ -707,8 +842,7 @@
                         team.push({
                             name: player.id,
                             role: role,
-                            profession: assignedProfession,
-                            ownProfessions: player.professions
+                            profession: assignedProfession
                         });
                     }
                 }
@@ -729,12 +863,11 @@
                 !player.professions.includes(prof)
             );
             
-            // 如果所有职业都是本体（极端情况），则从所有职业中随机
+            // 如果所有职业都是本体，则从所有职业中随机
             if (availableProfessions.length === 0) {
                 return allProfessions[Math.floor(Math.random() * allProfessions.length)];
             }
             
-            // 随机选择一个非本体职业
             return availableProfessions[Math.floor(Math.random() * availableProfessions.length)];
         }
         
@@ -776,6 +909,9 @@
             if (remaining.length > 0) {
                 const waitingDiv = document.createElement('div');
                 waitingDiv.style.marginTop = '20px';
+                waitingDiv.style.padding = '15px';
+                waitingDiv.style.background = '#fff3e0';
+                waitingDiv.style.borderRadius = '8px';
                 waitingDiv.innerHTML = `<strong>轮空人员：</strong> ${remaining.map(r => r.id).join(', ')}`;
                 resultContainer.appendChild(waitingDiv);
             }
@@ -813,4 +949,3 @@
     </script>
 </body>
 </html>
-
