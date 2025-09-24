@@ -741,6 +741,7 @@
           messagingSenderId: "648289853069",
           appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
         };
+
         // 职业数据
         const dpsProfessions = [
             '和尚', '冰心', '花间游', '气纯', '剑纯', '天策', '藏剑', '毒经', 
@@ -1208,3 +1209,365 @@
                         name: player.id,
                         role: role,
                         profession: profession
+                    });
+                }
+                teams.push(team);
+            }
+            
+            displayMatchResults(teams, tempShuffled);
+            
+            // 重要：不再删除报名信息！
+            // 这行被移除了: database.ref('matchSignups').remove();
+            
+            showMessage('match-message', '抽签完成！您可以再次点击重新抽签', 'success');
+        }
+        
+        // 从职业池中分配职业
+        function assignProfessionFromPool(player, role) {
+            const pool = role === 'dps' ? matchPool.dps : matchPool.healers;
+            
+            // 优先从玩家的超爱心法中选择（必须在池中）
+            const playerLoveProfessions = (player.loveProfessions || []).filter(prof => 
+                pool.includes(prof)
+            );
+            
+            if (playerLoveProfessions.length > 0) {
+                return playerLoveProfessions[Math.floor(Math.random() * playerLoveProfessions.length)];
+            }
+            
+            // 否则从池中随机选择
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+        
+        // 显示匹配结果
+        function displayMatchResults(teams, remaining) {
+            const container = document.getElementById('match-results');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            container.innerHTML = `
+                <h3>匹配结果 
+                    <span style="font-size: 14px; color: #666; font-weight: normal;">
+                        (${timestamp})
+                    </span>
+                </h3>
+            `;
+            
+            teams.forEach((team, index) => {
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'team';
+                teamDiv.innerHTML = `
+                    <div class="team-header">第 ${index + 1} 队</div>
+                    ${team.map(member => `
+                        <div>${member.name} - ${member.profession}</div>
+                    `).join('')}
+                `;
+                container.appendChild(teamDiv);
+            });
+            
+            if (remaining.length > 0) {
+                container.innerHTML += `<p>轮空玩家：${remaining.map(u => u.id).join('、')}</p>`;
+            }
+        }
+        
+        // 显示创建队伍表单
+        function showCreateTeamForm() {
+            if (!currentUser) {
+                showMessage('jjc-message', '请先登录', 'error');
+                return;
+            }
+            
+            document.getElementById('create-team-form').style.display = 'block';
+            document.getElementById('jjc-create-section').style.display = 'none';
+            document.getElementById('team-tips').value = '';
+            document.getElementById('team-date').value = getTodayDateString();
+            document.getElementById('team-date').focus();
+        }
+        
+        // 取消创建队伍
+        function cancelCreateTeam() {
+            document.getElementById('create-team-form').style.display = 'none';
+            document.getElementById('jjc-create-section').style.display = 'block';
+        }
+        
+        // 确认创建队伍
+        function confirmCreateTeam() {
+            if (!currentUser) {
+                showMessage('jjc-message', '请先登录', 'error');
+                return;
+            }
+            
+            const date = document.getElementById('team-date').value;
+            const tips = document.getElementById('team-tips').value.trim();
+            
+            if (!date) {
+                showMessage('jjc-message', '请选择开打日期', 'error');
+                return;
+            }
+            
+            // 获取用户的队伍计数
+            const userCount = userTeamCounts[currentUser] || 0;
+            const teamNumber = userCount + 1;
+            
+            // 更新计数
+            database.ref(`userTeamCounts/${currentUser}`).set(teamNumber);
+            
+            const teamId = `team_${Date.now()}`;
+            database.ref(`jjcTeams/${teamId}`).set({
+                id: teamId,
+                name: `${currentUser}的小队${teamNumber}`,
+                date: date,
+                tips: tips,
+                creator: currentUser,
+                members: {},
+                dpsCount: 0,
+                healerCount: 0,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            cancelCreateTeam();
+            showMessage('jjc-message', '队伍创建成功！', 'success');
+        }
+        
+        // 判断职业类型
+        function isProfessionDPS(profession) {
+            return dpsProfessions.includes(profession);
+        }
+        
+        // 删除队伍
+        function deleteTeam(teamId) {
+            if (!currentUser) return;
+            
+            if (confirm('确定要删除这个队伍吗？')) {
+                database.ref(`jjcTeams/${teamId}`).remove();
+                showMessage('jjc-message', '队伍已删除', 'success');
+            }
+        }
+        
+        // 更新队伍列表
+        function updateTeamsList() {
+            const container = document.getElementById('teams-list');
+            container.innerHTML = '';
+            
+            // 按创建时间排序
+            const sortedTeams = Object.values(jjcTeams).sort((a, b) => a.createdAt - b.createdAt);
+            
+            sortedTeams.forEach(team => {
+                const membersList = Object.entries(team.members || {});
+                const memberCount = membersList.length;
+                const isFull = memberCount >= 3;
+                const isCreator = currentUser && team.creator === currentUser;
+                const isMember = currentUser && team.members && team.members[currentUser];
+                
+                // 计算DPS和治疗数量
+                let currentDpsCount = 0;
+                let currentHealerCount = 0;
+                membersList.forEach(([id, prof]) => {
+                    if (isProfessionDPS(prof)) {
+                        currentDpsCount++;
+                    } else {
+                        currentHealerCount++;
+                    }
+                });
+                
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'team-container';
+                
+                // 队伍基本信息
+                const teamInfoDiv = document.createElement('div');
+                teamInfoDiv.className = 'team-item';
+                teamInfoDiv.innerHTML = `
+                    <div class="team-info">
+                        <div class="team-name">
+                            ${team.name}
+                            ${isFull ? '<span style="color: #f44336; margin-left: 8px;">[满员]</span>' : ''}
+                            ${isCreator ? '<span style="color: #2196f3; margin-left: 8px;">[我创建的]</span>' : ''}
+                        </div>
+                        <div class="team-tips">${team.tips || '暂无说明'}</div>
+                        <div class="team-meta">
+                            开打日期：${formatDate(team.date)} | 创建时间：${formatTime(team.createdAt)}
+                        </div>
+                        <div class="team-members">
+                            成员配置（${memberCount}/3）：
+                            ${membersList.map(([id, prof]) => 
+                                `<span class="member-slot ${isProfessionDPS(prof) ? 'dps' : 'healer'}">${id}(${prof})</span>`
+                            ).join('')}
+                            ${currentDpsCount < 2 ? Array(2 - currentDpsCount).fill('<span class="member-slot empty">DPS空位</span>').join('') : ''}
+                            ${currentHealerCount < 1 ? '<span class="member-slot empty">奶妈空位</span>' : ''}
+                        </div>
+                    </div>
+                `;
+                teamDiv.appendChild(teamInfoDiv);
+                
+                // 创建者编辑区域
+                if (isCreator) {
+                    const editSection = document.createElement('div');
+                    editSection.className = 'edit-tips-section';
+                    editSection.innerHTML = `
+                        <textarea id="tips-${team.id}" placeholder="注意加上开打时间和段位">${team.tips || ''}</textarea>
+                        <button class="button small" onclick="updateTeamTips('${team.id}')">更新说明</button>
+                    `;
+                    teamDiv.appendChild(editSection);
+                }
+                
+                // 加入队伍区域（只在已登录、未满员且当前用户未加入时显示）
+                if (currentUser && !isFull && !isMember) {
+                    const canJoinDPS = currentDpsCount < 2;
+                    const canJoinHealer = currentHealerCount < 1;
+                    
+                    if (canJoinDPS || canJoinHealer) {
+                        const joinSection = document.createElement('div');
+                        joinSection.className = 'join-section';
+                        
+                        const availableProfessions = [];
+                        if (canJoinDPS) {
+                            availableProfessions.push(...dpsProfessions);
+                        }
+                        if (canJoinHealer) {
+                            availableProfessions.push(...healerProfessions);
+                        }
+                        
+                        joinSection.innerHTML = `
+                            <label>选择心法加入队伍：</label>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                                <select id="join-${team.id}" style="width: 150px;">
+                                    ${availableProfessions.map(prof => 
+                                        `<option value="${prof}">${prof}</option>`
+                                    ).join('')}
+                                </select>
+                                <button class="button small success" onclick="joinTeam('${team.id}')">加入队伍</button>
+                            </div>
+                            <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                                需要：${canJoinDPS && currentDpsCount < 2 ? `${2 - currentDpsCount}个DPS ` : ''}${canJoinHealer && currentHealerCount < 1 ? `${1 - currentHealerCount}个奶妈` : ''}
+                            </div>
+                        `;
+                        teamDiv.appendChild(joinSection);
+                    }
+                }
+                
+                // 操作按钮区域
+                if (currentUser) {
+                    const actionSection = document.createElement('div');
+                    actionSection.className = 'action-section';
+                    
+                    // 退出队伍按钮（非创建者的成员可以退出）
+                    if (isMember && !isCreator) {
+                        actionSection.innerHTML += `
+                            <button class="button small danger" onclick="leaveTeam('${team.id}')">退出队伍</button>
+                        `;
+                    }
+                    
+                    // 删除队伍按钮（只有创建者可以删除）
+                    if (isCreator) {
+                        actionSection.innerHTML += `
+                            <button class="button small danger" onclick="deleteTeam('${team.id}')">删除队伍</button>
+                        `;
+                    }
+                    
+                    if (actionSection.innerHTML) {
+                        teamDiv.appendChild(actionSection);
+                    }
+                }
+                
+                container.appendChild(teamDiv);
+            });
+            
+            if (sortedTeams.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暂无队伍</p>';
+            }
+        }
+        
+        // 更新队伍说明
+        function updateTeamTips(teamId) {
+            const tips = document.getElementById(`tips-${teamId}`).value.trim();
+            database.ref(`jjcTeams/${teamId}/tips`).set(tips);
+            showMessage('jjc-message', '队伍说明更新成功！', 'success');
+        }
+        
+        // 加入队伍
+        function joinTeam(teamId) {
+            if (!currentUser) {
+                showMessage('jjc-message', '请先登录', 'error');
+                return;
+            }
+            
+            const selectElement = document.getElementById(`join-${teamId}`);
+            if (!selectElement) {
+                showMessage('jjc-message', '加入失败，请刷新页面重试', 'error');
+                return;
+            }
+            
+            const profession = selectElement.value;
+            
+            // 检查职业类型是否还有空位
+            const team = jjcTeams[teamId];
+            const membersList = Object.entries(team.members || {});
+            let currentDpsCount = 0;
+            let currentHealerCount = 0;
+            
+            membersList.forEach(([id, prof]) => {
+                if (isProfessionDPS(prof)) {
+                    currentDpsCount++;
+                } else {
+                    currentHealerCount++;
+                }
+            });
+            
+            if (isProfessionDPS(profession) && currentDpsCount >= 2) {
+                showMessage('jjc-message', 'DPS位置已满', 'error');
+                return;
+            }
+            
+            if (!isProfessionDPS(profession) && currentHealerCount >= 1) {
+                showMessage('jjc-message', '奶妈位置已满', 'error');
+                return;
+            }
+            
+            database.ref(`jjcTeams/${teamId}/members/${currentUser}`).set(profession);
+            showMessage('jjc-message', '加入队伍成功！', 'success');
+        }
+        
+        // 退出队伍
+        function leaveTeam(teamId) {
+            if (!currentUser) return;
+            
+            database.ref(`jjcTeams/${teamId}/members/${currentUser}`).remove();
+            showMessage('jjc-message', '已退出队伍', 'success');
+        }
+        
+        // 洗牌算法
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        
+        // 显示消息
+        function showMessage(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 3000);
+        }
+        
+        // 清除消息
+        function clearMessages() {
+            document.getElementById('user-message').innerHTML = '';
+            document.getElementById('match-message').innerHTML = '';
+            document.getElementById('jjc-message').innerHTML = '';
+        }
+        
+        // 初始化
+        window.onload = () => {
+            initFirebase();
+            initPoolProfessions();
+            updateJJCLoginStatus();
+            updateCurrentUserDisplay();
+        };
+    </script>
+</body>
+</html>
