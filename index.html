@@ -549,7 +549,7 @@
     </div>
 
     <script>
-
+        // Firebase配置 - 请替换为你自己的配置
         const firebaseConfig = {
             // 在这里填入你的Firebase配置
             apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
@@ -653,7 +653,6 @@
             if (!users[userId]) {
                 // 新用户注册
                 database.ref(`users/${userId}`).set({
-                    id: userId,
                     loveProfessions: [],
                     createdAt: firebase.database.ServerValue.TIMESTAMP
                 });
@@ -753,25 +752,29 @@
             showMessage('match-message', '职业池设置成功！', 'success');
         }
         
-        // 更新用户列表（添加删除功能）
+        // 更新用户列表（修复undefined问题）
         function updateAllUsersList() {
             const container = document.getElementById('all-users-list');
             container.innerHTML = '';
             
-            Object.values(users).forEach(user => {
+            Object.entries(users).forEach(([userId, user]) => {
                 const item = document.createElement('div');
                 item.className = 'user-item';
                 item.innerHTML = `
                     <div class="user-info">
-                        <div class="user-name">${user.id}</div>
+                        <div class="user-name">${userId}</div>
                         <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
                     </div>
                     <div>
-                        <button class="button small danger" onclick="deleteUser('${user.id}')">删除用户</button>
+                        <button class="button small danger" onclick="deleteUser('${userId}')">删除用户</button>
                     </div>
                 `;
                 container.appendChild(item);
             });
+            
+            if (Object.keys(users).length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暂无注册用户</p>';
+            }
         }
         
         // 删除用户
@@ -803,22 +806,22 @@
             }
         }
         
-        // 更新可报名用户列表
+        // 更新可报名用户列表（修复undefined问题）
         function updateAvailableMatchUsers() {
             const container = document.getElementById('available-match-users');
             container.innerHTML = '';
             
-            Object.values(users).forEach(user => {
-                const isSignedUp = matchSignups[user.id];
+            Object.entries(users).forEach(([userId, user]) => {
+                const isSignedUp = matchSignups[userId];
                 const item = document.createElement('div');
                 item.className = 'user-item';
                 item.innerHTML = `
                     <div class="user-info">
-                        <div class="user-name">${user.id}</div>
+                        <div class="user-name">${userId}</div>
                         <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
                     </div>
                     <div>
-                        ${currentUser === user.id ? 
+                        ${currentUser === userId ? 
                             (isSignedUp ? 
                                 '<span style="color: #4caf50;">已报名</span>' : 
                                 '<button class="button small success" onclick="quickSignup()">快速报名</button>'
@@ -829,6 +832,10 @@
                 `;
                 container.appendChild(item);
             });
+            
+            if (Object.keys(users).length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暂无可报名用户</p>';
+            }
         }
         
         // 快速报名
@@ -881,7 +888,7 @@
             }
         }
         
-        // 更新已报名用户列表
+        // 更新已报名用户列表（修复undefined问题）
         function updateSignedUpUsers() {
             const container = document.getElementById('signed-up-users');
             container.innerHTML = '';
@@ -900,7 +907,7 @@
                     item.innerHTML = `
                         <div class="user-info">
                             <div class="user-name">
-                                ${user.id}
+                                ${signup.userId}
                                 <span class="time-badge">${signup.time}</span>
                             </div>
                             <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
@@ -915,9 +922,10 @@
             }
         }
         
-        // 开始匹配
+        // 开始匹配（修复undefined问题）
         function startMatching() {
             const signupsList = Object.values(matchSignups).map(signup => ({
+                id: signup.userId,  // 确保有id字段
                 ...users[signup.userId],
                 time: signup.time
             }));
