@@ -1168,7 +1168,7 @@
             }
         }
         
-        // 开始匹配
+        // 开始匹配 - 修改：不再清空报名列表
         function startMatching() {
             const signupsList = Object.values(matchSignups).map(signup => ({
                 id: signup.userId,
@@ -1202,6 +1202,9 @@
             }
             
             displayMatchResults(teams, shuffled);
+            
+            // 不再清空报名列表，这样可以反复抽签
+            // database.ref('matchSignups').remove(); // 删除这行
         }
         
         // 从职业池中分配职业
@@ -1241,9 +1244,6 @@
             if (remaining.length > 0) {
                 container.innerHTML += `<p>轮空玩家：${remaining.map(u => u.id).join('、')}</p>`;
             }
-            
-            // 清空报名列表
-            database.ref('matchSignups').remove();
         }
         
         // 显示创建队伍表单
@@ -1320,7 +1320,7 @@
             }
         }
         
-        // 更新队伍列表
+        // 更新队伍列表 - 修复：正确显示职业需求
         function updateTeamsList() {
             const container = document.getElementById('teams-list');
             container.innerHTML = '';
@@ -1414,8 +1414,7 @@
                                 <button class="button small success" onclick="joinTeam('${team.id}')">加入队伍</button>
                             </div>
                             <div style="margin-top: 5px; font-size: 12px; color: #666;">
-                                ${!canJoinDPS ? 'DPS已满 ' : ''}
-                                ${!canJoinHealer ? '奶妈已满' : ''}
+                                需要：${canJoinDPS && currentDpsCount < 2 ? `${2 - currentDpsCount}个DPS ` : ''}${canJoinHealer && currentHealerCount < 1 ? `${1 - currentHealerCount}个奶妈` : ''}
                             </div>
                         `;
                         teamDiv.appendChild(joinSection);
