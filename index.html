@@ -368,6 +368,107 @@
             color: #f57c00;
         }
 
+        .current-user-display {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .current-user-display .user-label {
+            color: #1976d2;
+            font-weight: 500;
+        }
+
+        .current-user-display .user-id {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .rules-quick {
+            background-color: #f0f7ff;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .rules-quick h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .rules-quick ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .rules-quick li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .rules-quick li:before {
+            content: "•";
+            color: #2196f3;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
         @media (max-width: 600px) {
             .nav-tab {
                 font-size: 14px;
@@ -392,6 +493,12 @@
         <div class="content">
             <div id="connection-status" class="status-bar">
                 正在连接服务器...
+            </div>
+            
+            <!-- 当前用户显示 -->
+            <div id="current-user-display" class="current-user-display" style="display:none;">
+                <span class="user-label">当前用户：</span>
+                <span class="user-id" id="current-user-id">未登录</span>
             </div>
             
             <!-- 用户中心页面 -->
@@ -487,7 +594,7 @@
                 
                 <!-- 创建队伍按钮 -->
                 <div id="jjc-create-section" style="text-align: center; margin-bottom: 20px;">
-                    <button class="button success" onclick="createTeam()">创建新队伍</button>
+                    <button class="button success" onclick="openCreateTeamModal()">创建新队伍</button>
                 </div>
                 
                 <!-- 队伍列表 -->
@@ -499,62 +606,75 @@
             <div id="rules-page" class="page">
                 <h2>活动规则说明</h2>
                 
+                <div class="rules-quick">
+                    <h4>快速了解</h4>
+                    <ul>
+                        <li>注册只需输入游戏ID，无需密码</li>
+                        <li>设置超爱心法，让系统优先分配你喜欢的职业</li>
+                        <li>对排活动满6人自动开始，系统自动分配队伍</li>
+                        <li>JJC组队可自由创建队伍，最多3人</li>
+                    </ul>
+                </div>
+                
                 <div class="rules-section">
-                    <h3>一、用户系统</h3>
+                    <h3>📝 用户系统</h3>
                     <div class="rule-item">
-                        <h4>注册与登录</h4>
-                        <p>• 输入游戏ID即可快速注册</p>
-                        <p>• 注册后可随时编辑自己的"超爱心法"</p>
-                        <p>• 超爱心法将在匹配时优先分配给你</p>
+                        <p><strong>一键注册：</strong>输入游戏ID即可使用，无需复杂流程</p>
+                        <p><strong>超爱心法：</strong>选择你最擅长的职业，系统会优先为你分配</p>
                     </div>
                 </div>
                 
                 <div class="rules-section">
-                    <h3>二、对排活动</h3>
+                    <h3>⚔️ 对排活动</h3>
                     <div class="rule-item">
                         <h4>活动流程</h4>
-                        <p>• 管理员先设置本次活动可用的职业池</p>
-                        <p>• 玩家自行报名参加</p>
-                        <p>• 报名满6人即可开始抽签分队</p>
-                        <p>• 每队固定3人：2个DPS + 1个奶妈</p>
+                        <p>1. 管理员设置本次活动的职业池</p>
+                        <p>2. 玩家点击报名参加</p>
+                        <p>3. 满6人后开始抽签</p>
+                        <p>4. 系统自动分配成2队（每队2DPS+1奶妈）</p>
                     </div>
                     <div class="rule-item">
-                        <h4>职业分配机制</h4>
-                        <p>• 只会分配管理员设置的职业池中的职业</p>
-                        <p>• 优先分配玩家设置的"超爱心法"职业</p>
-                        <p>• 若超爱心法不在本次职业池中，则从池中随机分配</p>
+                        <h4>智能分配</h4>
+                        <p>• 优先分配你的超爱心法职业</p>
+                        <p>• 如果超爱心法不在职业池中，随机分配池内职业</p>
+                        <p>• 确保每队配置合理</p>
                     </div>
                 </div>
                 
                 <div class="rules-section">
-                    <h3>三、JJC组队预约</h3>
+                    <h3>🏆 JJC组队</h3>
                     <div class="rule-item">
-                        <h4>组队说明</h4>
-                        <p>• 点击创建按钮快速建队</p>
-                        <p>• 每队最多3人，满员后自动关闭</p>
-                        <p>• 加入队伍时需选择自己玩的心法</p>
-                        <p>• 队伍创建者可以随时修改队伍说明</p>
-                        <p>• 队伍创建者可以删除队伍</p>
-                    </div>
-                    <div class="rule-item">
-                        <h4>注意事项</h4>
-                        <p>• 队伍说明请注明开打时间和段位</p>
-                        <p>• 加入前请确认自己的时间安排</p>
-                        <p>• 请准时参加已加入的队伍活动</p>
+                        <h4>灵活组队</h4>
+                        <p>• 创建队伍时填写说明（时间、段位等）</p>
+                        <p>• 选择心法加入队伍</p>
+                        <p>• 满3人自动满员</p>
+                        <p>• 创建者可修改说明和删除队伍</p>
                     </div>
                 </div>
                 
                 <div class="rules-section">
-                    <h3>四、职业列表</h3>
+                    <h3>🎯 职业列表</h3>
                     <div class="rule-item">
-                        <h4>DPS职业</h4>
-                        <p>和尚、冰心、花间游、气纯、剑纯、天策、藏剑、毒经、鲸鱼、田螺、明教、丐帮、苍云、莫问、霸刀、蓬莱、凌雪、衍天、无方、刀宗、万灵、段氏</p>
-                    </div>
-                    <div class="rule-item">
-                        <h4>奶妈职业</h4>
-                        <p>奶秀、奶毒、奶花、奶歌、奶药</p>
+                        <p><strong>DPS：</strong>和尚、冰心、花间游、气纯、剑纯、天策、藏剑、毒经、鲸鱼、田螺、明教、丐帮、苍云、莫问、霸刀、蓬莱、凌雪、衍天、无方、刀宗、万灵、段氏</p>
+                        <p><strong>治疗：</strong>奶秀、奶毒、奶花、奶歌、奶药</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建队伍模态框 -->
+    <div id="createTeamModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCreateTeamModal()">&times;</span>
+            <div class="modal-header">创建新队伍</div>
+            <div class="form-group">
+                <label for="team-tips">队伍说明（请注明开打时间和段位）</label>
+                <textarea id="team-tips" placeholder="例如：今晚8点，1800-2000段位，需要稳定的DPS"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="button" onclick="closeCreateTeamModal()">取消</button>
+                <button class="button success" onclick="createTeam()">创建队伍</button>
             </div>
         </div>
     </div>
@@ -661,6 +781,20 @@
             clearMessages();
         }
         
+        // 更新当前用户显示
+        function updateCurrentUserDisplay() {
+            const display = document.getElementById('current-user-display');
+            const userIdSpan = document.getElementById('current-user-id');
+            
+            if (currentUser) {
+                display.style.display = 'flex';
+                userIdSpan.textContent = currentUser;
+            } else {
+                display.style.display = 'none';
+                userIdSpan.textContent = '未登录';
+            }
+        }
+        
         // 更新JJC页面登录状态
         function updateJJCLoginStatus() {
             const loginReminder = document.getElementById('jjc-login-reminder');
@@ -707,6 +841,7 @@
             // 更新对排和JJC页面的用户状态
             updateMatchPageUserStatus();
             updateJJCLoginStatus();
+            updateCurrentUserDisplay();
         }
         
         // 初始化超爱心法选择
@@ -1035,12 +1170,29 @@
             database.ref('matchSignups').remove();
         }
         
-        // 创建JJC队伍
+        // 打开创建队伍模态框
+        function openCreateTeamModal() {
+            if (!currentUser) {
+                showMessage('jjc-message', '请先登录', 'error');
+                return;
+            }
+            document.getElementById('createTeamModal').style.display = 'block';
+            document.getElementById('team-tips').value = '';
+        }
+        
+        // 关闭创建队伍模态框
+        function closeCreateTeamModal() {
+            document.getElementById('createTeamModal').style.display = 'none';
+        }
+        
+        // 创建JJC队伍（带队伍说明）
         function createTeam() {
             if (!currentUser) {
                 showMessage('jjc-message', '请先登录', 'error');
                 return;
             }
+            
+            const teamTips = document.getElementById('team-tips').value.trim();
             
             // 增加计数器
             const newTeamNumber = teamCounter + 1;
@@ -1050,13 +1202,14 @@
             database.ref(`jjcTeams/${teamId}`).set({
                 id: teamId,
                 name: `队伍${newTeamNumber}`,
-                tips: '',
+                tips: teamTips || '暂无说明',
                 creator: currentUser,
                 members: {},
                 createdAt: firebase.database.ServerValue.TIMESTAMP
             });
             
-            showMessage('jjc-message', '队伍创建成功！请编辑队伍说明', 'success');
+            closeCreateTeamModal();
+            showMessage('jjc-message', '队伍创建成功！', 'success');
         }
         
         // 删除队伍
@@ -1229,11 +1382,19 @@
             document.getElementById('jjc-message').innerHTML = '';
         }
         
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('createTeamModal')) {
+                closeCreateTeamModal();
+            }
+        }
+        
         // 初始化
         window.onload = () => {
             initFirebase();
             initPoolProfessions();
             updateJJCLoginStatus();
+            updateCurrentUserDisplay();
         };
     </script>
 </body>
