@@ -351,6 +351,23 @@
             border-radius: 8px;
         }
 
+        .action-section {
+            margin-top: 10px;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .login-reminder {
+            background-color: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            color: #f57c00;
+        }
+
         @media (max-width: 600px) {
             .nav-tab {
                 font-size: 14px;
@@ -463,8 +480,13 @@
                 <h2>JJC组队预约</h2>
                 <div id="jjc-message"></div>
                 
+                <!-- 未登录提示 -->
+                <div id="jjc-login-reminder" class="login-reminder" style="display:none;">
+                    请先在用户中心登录后再进行组队操作
+                </div>
+                
                 <!-- 创建队伍按钮 -->
-                <div style="text-align: center; margin-bottom: 20px;">
+                <div id="jjc-create-section" style="text-align: center; margin-bottom: 20px;">
                     <button class="button success" onclick="createTeam()">创建新队伍</button>
                 </div>
                 
@@ -512,6 +534,7 @@
                         <p>• 每队最多3人，满员后自动关闭</p>
                         <p>• 加入队伍时需选择自己玩的心法</p>
                         <p>• 队伍创建者可以随时修改队伍说明</p>
+                        <p>• 队伍创建者可以删除队伍</p>
                     </div>
                     <div class="rule-item">
                         <h4>注意事项</h4>
@@ -630,7 +653,29 @@
             event.target.classList.add('active');
             document.getElementById(`${tab}-page`).classList.add('active');
             
+            // 切换到JJC页面时检查登录状态
+            if (tab === 'jjc') {
+                updateJJCLoginStatus();
+            }
+            
             clearMessages();
+        }
+        
+        // 更新JJC页面登录状态
+        function updateJJCLoginStatus() {
+            const loginReminder = document.getElementById('jjc-login-reminder');
+            const createSection = document.getElementById('jjc-create-section');
+            
+            if (!currentUser) {
+                loginReminder.style.display = 'block';
+                createSection.style.display = 'none';
+            } else {
+                loginReminder.style.display = 'none';
+                createSection.style.display = 'block';
+            }
+            
+            // 更新队伍列表
+            updateTeamsList();
         }
         
         // 注册或登录
@@ -661,6 +706,7 @@
             
             // 更新对排和JJC页面的用户状态
             updateMatchPageUserStatus();
+            updateJJCLoginStatus();
         }
         
         // 初始化超爱心法选择
@@ -841,7 +887,7 @@
             signupMatch();
         }
         
-        // 报名对排（删除时间段）
+        // 报名对排
         function signupMatch() {
             if (!currentUser) {
                 showMessage('match-message', '请先登录', 'error');
@@ -989,7 +1035,7 @@
             database.ref('matchSignups').remove();
         }
         
-        // 创建JJC队伍（使用序号）
+        // 创建JJC队伍
         function createTeam() {
             if (!currentUser) {
                 showMessage('jjc-message', '请先登录', 'error');
@@ -1013,7 +1059,17 @@
             showMessage('jjc-message', '队伍创建成功！请编辑队伍说明', 'success');
         }
         
-        // 更新队伍列表（修复加入功能）
+        // 删除队伍
+        function deleteTeam(teamId) {
+            if (!currentUser) return;
+            
+            if (confirm('确定要删除这个队伍吗？')) {
+                database.ref(`jjcTeams/${teamId}`).remove();
+                showMessage('jjc-message', '队伍已删除', 'success');
+            }
+        }
+        
+        // 更新队伍列表
         function updateTeamsList() {
             const container = document.getElementById('teams-list');
             container.innerHTML = '';
@@ -1063,8 +1119,8 @@
                     teamDiv.appendChild(editSection);
                 }
                 
-                // 加入队伍区域（只在未满员且当前用户未加入时显示）
-                if (!isFull && currentUser && !isMember) {
+                // 加入队伍区域（只在已登录、未满员且当前用户未加入时显示）
+                if (currentUser && !isFull && !isMember) {
                     const joinSection = document.createElement('div');
                     joinSection.className = 'join-section';
                     joinSection.innerHTML = `
@@ -1081,14 +1137,28 @@
                     teamDiv.appendChild(joinSection);
                 }
                 
-                // 退出队伍按钮（非创建者的成员可以退出）
-                if (isMember && !isCreator) {
-                    const leaveSection = document.createElement('div');
-                    leaveSection.style.padding = '10px';
-                    leaveSection.innerHTML = `
-                        <button class="button small danger" onclick="leaveTeam('${team.id}')">退出队伍</button>
-                    `;
-                    teamDiv.appendChild(leaveSection);
+                // 操作按钮区域
+                if (currentUser) {
+                    const actionSection = document.createElement('div');
+                    actionSection.className = 'action-section';
+                    
+                    // 退出队伍按钮（非创建者的成员可以退出）
+                    if (isMember && !isCreator) {
+                        actionSection.innerHTML += `
+                            <button class="button small danger" onclick="leaveTeam('${team.id}')">退出队伍</button>
+                        `;
+                    }
+                    
+                    // 删除队伍按钮（只有创建者可以删除）
+                    if (isCreator) {
+                        actionSection.innerHTML += `
+                            <button class="button small danger" onclick="deleteTeam('${team.id}')">删除队伍</button>
+                        `;
+                    }
+                    
+                    if (actionSection.innerHTML) {
+                        teamDiv.appendChild(actionSection);
+                    }
                 }
                 
                 container.appendChild(teamDiv);
@@ -1163,6 +1233,7 @@
         window.onload = () => {
             initFirebase();
             initPoolProfessions();
+            updateJJCLoginStatus();
         };
     </script>
 </body>
