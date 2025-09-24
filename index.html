@@ -213,6 +213,21 @@
             color: #666;
         }
 
+        /* 高亮队伍说明 */
+        .team-tips {
+            background-color: #fffde7;
+            border: 1px solid #fff59d;
+            border-radius: 6px;
+            padding: 8px;
+            line-height: 1.6;
+        }
+
+        .team-meta {
+            font-size: 12px;
+            color: #777;
+            margin-top: 6px;
+        }
+
         .status-bar {
             background-color: #e3f2fd;
             border-radius: 8px;
@@ -387,6 +402,9 @@
             <button class="nav-tab" onclick="switchTab('match')">对排活动</button>
             <button class="nav-tab" onclick="switchTab('jjc')">JJC组队</button>
             <button class="nav-tab" onclick="switchTab('rules')">活动规则</button>
+        </div>
+        <div id="user-status" class="status-bar" style="margin-top:10px;">
+            当前用户：<span id="current-username">未登录</span>
         </div>
         
         <div class="content">
@@ -700,6 +718,8 @@
                 showMessage('user-message', `欢迎回来 ${userId}！`, 'success');
             }
             
+            // 更新头部用户名
+            updateUsernameStatus();
             // 显示超爱心法编辑区
             document.getElementById('love-professions-section').style.display = 'block';
             initLoveProfessions();
@@ -707,6 +727,14 @@
             // 更新对排和JJC页面的用户状态
             updateMatchPageUserStatus();
             updateJJCLoginStatus();
+        }
+
+        // 更新顶部当前用户显示
+        function updateUsernameStatus() {
+            const el = document.getElementById('current-username');
+            if (el) {
+                el.textContent = currentUser || '未登录';
+            }
         }
         
         // 初始化超爱心法选择
@@ -1045,6 +1073,12 @@
             // 读取开打日期，默认当天
             const dateInput = document.getElementById('jjc-date');
             const selectedDate = (dateInput && dateInput.value) ? dateInput.value : formatDateYYYYMMDD(new Date());
+            // 弹框输入队伍说明
+            const tipsInput = prompt('请输入队伍说明（建议包含开打时间与段位）', '');
+            if (tipsInput === null) {
+                // 用户取消
+                return;
+            }
             
             // 增加计数器
             const newTeamNumber = teamCounter + 1;
@@ -1054,14 +1088,14 @@
             database.ref(`jjcTeams/${teamId}`).set({
                 id: teamId,
                 name: `${currentUser}的小队${newTeamNumber}`,
-                tips: '',
+                tips: (tipsInput || '').trim(),
                 creator: currentUser,
                 members: {},
                 createdAt: firebase.database.ServerValue.TIMESTAMP,
                 matchDate: selectedDate
             });
             
-            showMessage('jjc-message', '队伍创建成功！请编辑队伍说明', 'success');
+            showMessage('jjc-message', '队伍创建成功！', 'success');
         }
         
         // 删除队伍
@@ -1208,14 +1242,26 @@
             const healerCount = values.filter(p => healerProfessions.includes(p)).length;
             
             if (dpsProfessions.includes(profession) && dpsCount >= 2) {
+                alert('该队伍DPS名额已满（最多2个DPS + 1个奶妈）');
                 showMessage('jjc-message', '该队伍DPS名额已满（最多2个）', 'error');
                 return;
             }
             if (healerProfessions.includes(profession) && healerCount >= 1) {
+                alert('该队伍奶妈名额已满（最多2个DPS + 1个奶妈）');
                 showMessage('jjc-message', '该队伍奶妈名额已满（最多1个）', 'error');
                 return;
             }
             
+            // 最终组合校验：加入后最多3人且满足2DPS+1奶
+            const nextValues = [...values, profession];
+            const nextDps = nextValues.filter(p => dpsProfessions.includes(p)).length;
+            const nextHealer = nextValues.filter(p => healerProfessions.includes(p)).length;
+            if (nextValues.length > 3 || nextDps > 2 || nextHealer > 1) {
+                alert('组合不合法：必须为2个DPS + 1个奶妈');
+                showMessage('jjc-message', '组合不合法：必须为2个DPS + 1个奶妈', 'error');
+                return;
+            }
+
             database.ref(`jjcTeams/${teamId}/members/${currentUser}`).set(profession);
             showMessage('jjc-message', '加入队伍成功！', 'success');
         }
@@ -1260,6 +1306,7 @@
             initFirebase();
             initPoolProfessions();
             updateJJCLoginStatus();
+            updateUsernameStatus();
             // 设置开打日期默认今天
             const dateInput = document.getElementById('jjc-date');
             if (dateInput) dateInput.value = formatDateYYYYMMDD(new Date());
