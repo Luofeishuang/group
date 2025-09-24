@@ -345,6 +345,14 @@
             color: #f57c00;
         }
 
+        .team-container {
+            background-color: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
         @media (max-width: 600px) {
             .nav-tab {
                 font-size: 14px;
@@ -427,8 +435,18 @@
                     <div id="current-pool-content"></div>
                 </div>
                 
+                <!-- 可报名用户 -->
+                <h3>可报名用户</h3>
+                <div id="available-match-users"></div>
+                
                 <!-- 用户报名 -->
                 <div class="form-group">
+                    <label for="match-time">选择活动时间段</label>
+                    <select id="match-time">
+                        <option value="下午场">下午场（14:00-18:00）</option>
+                        <option value="晚上场">晚上场（19:00-23:00）</option>
+                        <option value="深夜场">深夜场（23:00-02:00）</option>
+                    </select>
                 </div>
                 
                 <div class="status-bar">
@@ -531,7 +549,7 @@
     </div>
 
     <script>
-        // Firebase配置 - 请替换为你自己的配置
+
         const firebaseConfig = {
             // 在这里填入你的Firebase配置
             apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
@@ -583,6 +601,7 @@
                 database.ref('users').on('value', (snapshot) => {
                     users = snapshot.val() || {};
                     updateAllUsersList();
+                    updateAvailableMatchUsers();
                 });
                 
                 database.ref('matchPool').on('value', (snapshot) => {
@@ -594,6 +613,7 @@
                     matchSignups = snapshot.val() || {};
                     updateSignedUpUsers();
                     updateMatchPageUserStatus();
+                    updateAvailableMatchUsers();
                 });
                 
                 database.ref('jjcTeams').on('value', (snapshot) => {
@@ -733,7 +753,7 @@
             showMessage('match-message', '职业池设置成功！', 'success');
         }
         
-        // 更新用户列表
+        // 更新用户列表（添加删除功能）
         function updateAllUsersList() {
             const container = document.getElementById('all-users-list');
             container.innerHTML = '';
@@ -746,9 +766,26 @@
                         <div class="user-name">${user.id}</div>
                         <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
                     </div>
+                    <div>
+                        <button class="button small danger" onclick="deleteUser('${user.id}')">删除用户</button>
+                    </div>
                 `;
                 container.appendChild(item);
             });
+        }
+        
+        // 删除用户
+        function deleteUser(userId) {
+            if (confirm(`确定要删除用户 ${userId} 吗？`)) {
+                database.ref(`users/${userId}`).remove();
+                // 同时删除该用户的报名信息
+                database.ref(`matchSignups/${userId}`).remove();
+                // 删除该用户在JJC队伍中的信息
+                Object.keys(jjcTeams).forEach(teamId => {
+                    database.ref(`jjcTeams/${teamId}/members/${userId}`).remove();
+                });
+                showMessage('user-message', `用户 ${userId} 已删除`, 'success');
+            }
         }
         
         // 更新职业池显示
@@ -764,6 +801,43 @@
             } else {
                 document.getElementById('current-pool-info').style.display = 'none';
             }
+        }
+        
+        // 更新可报名用户列表
+        function updateAvailableMatchUsers() {
+            const container = document.getElementById('available-match-users');
+            container.innerHTML = '';
+            
+            Object.values(users).forEach(user => {
+                const isSignedUp = matchSignups[user.id];
+                const item = document.createElement('div');
+                item.className = 'user-item';
+                item.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-name">${user.id}</div>
+                        <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
+                    </div>
+                    <div>
+                        ${currentUser === user.id ? 
+                            (isSignedUp ? 
+                                '<span style="color: #4caf50;">已报名</span>' : 
+                                '<button class="button small success" onclick="quickSignup()">快速报名</button>'
+                            ) : 
+                            (isSignedUp ? '<span style="color: #999;">已报名</span>' : '')
+                        }
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+        
+        // 快速报名
+        function quickSignup() {
+            if (!currentUser) {
+                showMessage('match-message', '请先登录', 'error');
+                return;
+            }
+            signupMatch();
         }
         
         // 报名对排
@@ -940,7 +1014,7 @@
             showMessage('jjc-message', '队伍创建成功！请编辑队伍说明', 'success');
         }
         
-        // 更新队伍列表
+        // 更新队伍列表（修复加入和编辑功能）
         function updateTeamsList() {
             const container = document.getElementById('teams-list');
             container.innerHTML = '';
@@ -949,41 +1023,60 @@
                 const memberCount = Object.keys(team.members || {}).length;
                 const isFull = memberCount >= 3;
                 const isCreator = currentUser && team.creator === currentUser;
+                const isMember = currentUser && team.members && team.members[currentUser];
                 
                 const teamDiv = document.createElement('div');
-                teamDiv.className = 'team-item';
-                teamDiv.innerHTML = `
-                    <div class="team-info">
-                        <div class="team-name">
-                            ${team.name}
-                            ${isFull ? '<span style="color: #f44336; margin-left: 8px;">[满员]</span>' : ''}
-                        </div>
-                        <div class="team-tips">${team.tips || '暂无说明（注意加上开打时间和段位）'}</div>
-                        <div class="team-members">
-                            成员（${memberCount}/3）：
-                            ${Object.entries(team.members || {}).map(([id, prof]) => 
-                                `<span class="member-slot">${id}(${prof})</span>`
-                            ).join('')}
-                            ${Array(3 - memberCount).fill('<span class="member-slot empty">空位</span>').join('')}
-                        </div>
-                        ${isCreator ? `
-                            <div class="edit-tips-section">
-                                <textarea id="tips-${team.id}" placeholder="注意加上开打时间和段位">${team.tips || ''}</textarea>
-                                <button class="button small" onclick="updateTeamTips('${team.id}')">更新说明</button>
+                teamDiv.className = 'team-container';
+                
+                // 队伍基本信息
+                let teamHTML = `
+                    <div class="team-item">
+                        <div class="team-info">
+                            <div class="team-name">
+                                ${team.name}
+                                ${isFull ? '<span style="color: #f44336; margin-left: 8px;">[满员]</span>' : ''}
+                                ${isCreator ? '<span style="color: #2196f3; margin-left: 8px;">[我创建的]</span>' : ''}
                             </div>
-                        ` : ''}
-                    </div>
-                    ${!isFull && currentUser && !team.members[currentUser] ? `
-                        <div>
-                            <select id="join-${team.id}" style="width: 120px; margin-right: 8px;">
-                                ${[...dpsProfessions, ...healerProfessions].map(prof => 
-                                    `<option value="${prof}">${prof}</option>`
+                            <div class="team-tips">${team.tips || '暂无说明（注意加上开打时间和段位）'}</div>
+                            <div class="team-members">
+                                成员（${memberCount}/3）：
+                                ${Object.entries(team.members || {}).map(([id, prof]) => 
+                                    `<span class="member-slot">${id}(${prof})</span>`
                                 ).join('')}
-                            </select>
-                            <button class="button small success" onclick="joinTeam('${team.id}')">加入</button>
+                                ${Array(3 - memberCount).fill('<span class="member-slot empty">空位</span>').join('')}
+                            </div>
                         </div>
-                    ` : ''}
+                    </div>
                 `;
+                
+                // 创建者编辑区域
+                if (isCreator) {
+                    teamHTML += `
+                        <div class="edit-tips-section">
+                            <textarea id="tips-${team.id}" placeholder="注意加上开打时间和段位">${team.tips || ''}</textarea>
+                            <button class="button small" onclick="updateTeamTips('${team.id}')">更新说明</button>
+                        </div>
+                    `;
+                }
+                
+                // 加入队伍区域
+                if (!isFull && currentUser && !isMember) {
+                    teamHTML += `
+                        <div style="margin-top: 10px; padding: 10px; background-color: #f5f5f5; border-radius: 8px;">
+                            <label>选择心法加入队伍：</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="join-${team.id}" style="width: 150px;">
+                                    ${[...dpsProfessions, ...healerProfessions].map(prof => 
+                                        `<option value="${prof}">${prof}</option>`
+                                    ).join('')}
+                                </select>
+                                <button class="button small success" onclick="joinTeam('${team.id}')">加入队伍</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                teamDiv.innerHTML = teamHTML;
                 container.appendChild(teamDiv);
             });
             
