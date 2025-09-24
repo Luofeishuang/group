@@ -198,6 +198,11 @@
             align-items: center;
         }
 
+        .user-item.signed-up {
+            background-color: #e8f5e9;
+            border-color: #a5d6a7;
+        }
+
         .user-info, .team-info {
             flex: 1;
         }
@@ -211,6 +216,12 @@
         .user-professions, .team-tips {
             font-size: 14px;
             color: #666;
+        }
+
+        .team-meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
         }
 
         .status-bar {
@@ -268,12 +279,12 @@
 
         .member-slot.dps {
             background-color: #ffebee;
-            color: #c62828;
+            border: 1px solid #ffcdd2;
         }
 
         .member-slot.healer {
             background-color: #e8f5e9;
-            color: #2e7d32;
+            border: 1px solid #a5d6a7;
         }
 
         .pool-info {
@@ -436,37 +447,24 @@
             color: #555;
         }
 
-        .team-meta-info {
-            display: flex;
-            gap: 15px;
-            font-size: 12px;
-            color: #999;
-            margin-bottom: 4px;
-        }
-
-        .user-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .user-item.signed-up {
-            background-color: #e8f5e9;
-            border-color: #a5d6a7;
-        }
-
-        .user-item.signed-up .user-name::after {
-            content: "已报名";
-            margin-left: 8px;
-            color: #4caf50;
-            font-size: 12px;
-        }
-
-        .signup-actions {
+        .signup-button-container {
             text-align: center;
-            margin: 30px 0;
             padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
+            background-color: #f0f7ff;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .match-button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .user-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
 
         @media (max-width: 600px) {
@@ -533,8 +531,8 @@
                 <div id="match-current-user" class="current-user-display"></div>
                 <div id="match-message"></div>
                 
-                <!-- 报名参加按钮 -->
-                <div class="signup-actions">
+                <!-- 报名按钮区域 -->
+                <div class="signup-button-container">
                     <div class="status-bar" style="margin-bottom: 15px;">
                         当前报名人数：<span id="signup-count">0</span> 人（需要至少6人才能开始抽签）
                     </div>
@@ -563,15 +561,23 @@
                 </div>
                 
                 <!-- 抽签按钮 -->
-                <button class="button success" onclick="startMatching()" id="match-button" disabled style="width: 100%; margin: 20px 0;">
-                    开始抽签分队
-                </button>
+                <div class="match-button-container">
+                    <button class="button success" onclick="startMatching()" id="match-button" disabled style="width: 100%;">
+                        开始抽签分队
+                    </button>
+                </div>
                 
                 <div id="match-results" class="match-result"></div>
                 
-                <!-- 所有用户列表 -->
-                <h3>用户列表</h3>
-                <div id="match-users-list" class="user-list"></div>
+                <!-- 所有用户列表（合并显示） -->
+                <div class="user-list-header">
+                    <h3>所有用户</h3>
+                    <div style="font-size: 12px; color: #666;">
+                        <span style="color: #4caf50;">● 已报名</span> 
+                        <span style="margin-left: 10px;">● 未报名</span>
+                    </div>
+                </div>
+                <div id="all-match-users"></div>
             </div>
             
             <!-- JJC组队页面 -->
@@ -589,11 +595,11 @@
                 <div id="create-team-form" class="create-team-dialog" style="display:none;">
                     <h3>创建新队伍</h3>
                     <div class="form-group">
-                        <label for="play-date">开打日期</label>
-                        <input type="date" id="play-date" />
+                        <label for="team-date">开打日期</label>
+                        <input type="date" id="team-date">
                     </div>
                     <div class="form-group">
-                        <label for="team-tips">队伍说明（请注明时间和段位要求）</label>
+                        <label for="team-tips">队伍说明（请注明时间和段位）</label>
                         <textarea id="team-tips" placeholder="例如：晚上8点开打，1700段位以上"></textarea>
                     </div>
                     <button class="button success" onclick="confirmCreateTeam()">确认创建</button>
@@ -666,19 +672,17 @@
                     <div class="rule-item">
                         <h4>创建队伍</h4>
                         <p>• 点击"创建新队伍"按钮</p>
-                        <p>• 选择开打日期（默认为当天）</p>
+                        <p>• 选择开打日期（默认当天）</p>
                         <p>• 填写队伍说明（时间、段位要求等）</p>
-                        <p>• 队伍命名格式：[创建人]的小队</p>
-                        <p>• <strong>队伍配置固定为：2个DPS + 1个奶妈</strong></p>
+                        <p>• 队伍会按创建者命名（如：张三的小队1）</p>
                         <p>• 过期队伍每天晚上12点自动清理</p>
                     </div>
                     <div class="rule-item">
-                        <h4>加入队伍</h4>
-                        <p>• 查看队伍当前配置需求</p>
-                        <p>• 选择符合队伍需求的心法</p>
-                        <p>• 点击"加入队伍"按钮</p>
-                        <p>• 每队最多3人，满员后自动关闭</p>
-                        <p>• 可以随时退出队伍</p>
+                        <h4>队伍配置</h4>
+                        <p>• 每队固定3人：2个DPS + 1个奶妈</p>
+                        <p>• 加入时系统会自动判断职业类型</p>
+                        <p>• 职业槽位满后无法再加入同类型职业</p>
+                        <p>• 创建者可以修改说明或删除队伍</p>
                     </div>
                     <div class="rule-item">
                         <h4>注意事项</h4>
@@ -706,7 +710,7 @@
                         <li><strong>Q：忘记自己的ID怎么办？</strong><br>A：使用游戏内的角色名重新登录即可</li>
                         <li><strong>Q：可以修改超爱心法吗？</strong><br>A：可以，随时在用户中心修改</li>
                         <li><strong>Q：对排活动职业是怎么分配的？</strong><br>A：优先你的超爱心法，没有则随机</li>
-                        <li><strong>Q：JJC队伍配置是固定的吗？</strong><br>A：是的，固定为2个DPS + 1个奶妈</li>
+                        <li><strong>Q：JJC队伍过期了怎么办？</strong><br>A：过期队伍会自动清理，需要重新创建</li>
                     </ul>
                 </div>
             </div>
@@ -717,15 +721,14 @@
         // Firebase配置 - 请替换为你自己的配置
         const firebaseConfig = {
             // 在这里填入你的Firebase配置
-          apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
-          authDomain: "user-ba917.firebaseapp.com",
-          databaseURL: "https://user-ba917-default-rtdb.firebaseio.com",
-          projectId: "user-ba917",
-          storageBucket: "user-ba917.firebasestorage.app",
-          messagingSenderId: "648289853069",
-          appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
+            apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
+            authDomain: "user-ba917.firebaseapp.com",
+            databaseURL: "https://user-ba917-default-rtdb.firebaseio.com",
+            projectId: "user-ba917",
+            storageBucket: "user-ba917.firebasestorage.app",
+            messagingSenderId: "648289853069",
+            appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
         };
-
 
         // 职业数据
         const dpsProfessions = [
@@ -743,7 +746,7 @@
         let matchPool = { dps: [], healers: [] };
         let matchSignups = {};
         let jjcTeams = {};
-        let userTeamCounter = {}; // 存储每个用户的队伍计数
+        let userTeamCounts = {}; // 记录每个用户创建的队伍数量
         
         // 初始化Firebase
         function initFirebase() {
@@ -768,7 +771,7 @@
                 database.ref('users').on('value', (snapshot) => {
                     users = snapshot.val() || {};
                     updateAllUsersList();
-                    updateMatchUsersList();
+                    updateAllMatchUsers();
                 });
                 
                 database.ref('matchPool').on('value', (snapshot) => {
@@ -778,22 +781,23 @@
                 
                 database.ref('matchSignups').on('value', (snapshot) => {
                     matchSignups = snapshot.val() || {};
-                    updateSignupStatus();
+                    updateSignupCount();
                     updateMatchPageUserStatus();
-                    updateMatchUsersList();
+                    updateAllMatchUsers();
                 });
                 
                 database.ref('jjcTeams').on('value', (snapshot) => {
                     jjcTeams = snapshot.val() || {};
                     updateTeamsList();
+                    cleanExpiredTeams();
                 });
                 
-                // 获取用户队伍计数器
-                database.ref('userTeamCounter').on('value', (snapshot) => {
-                    userTeamCounter = snapshot.val() || {};
+                // 获取用户创建的队伍计数
+                database.ref('userTeamCounts').on('value', (snapshot) => {
+                    userTeamCounts = snapshot.val() || {};
                 });
                 
-                // 设置每天晚上12点清理过期队伍
+                // 设置定时清理任务
                 setInterval(cleanExpiredTeams, 60000); // 每分钟检查一次
                 
                 return true;
@@ -805,28 +809,31 @@
         
         // 清理过期队伍
         function cleanExpiredTeams() {
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             
             Object.entries(jjcTeams).forEach(([teamId, team]) => {
-                if (team.playDate && new Date(team.playDate).getTime() < today) {
-                    database.ref(`jjcTeams/${teamId}`).remove();
+                if (team.date) {
+                    const teamDate = new Date(team.date);
+                    if (teamDate < today) {
+                        database.ref(`jjcTeams/${teamId}`).remove();
+                    }
                 }
             });
         }
         
         // 获取今天的日期字符串
         function getTodayDateString() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
         
         // 格式化日期显示
-        function formatDate(dateString) {
-            const date = new Date(dateString);
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
             const month = date.getMonth() + 1;
             const day = date.getDate();
             return `${month}月${day}日`;
@@ -835,7 +842,7 @@
         // 格式化时间显示
         function formatTime(timestamp) {
             const date = new Date(timestamp);
-            const hours = date.getHours();
+            const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             return `${hours}:${minutes}`;
         }
@@ -1014,7 +1021,7 @@
             showMessage('match-message', '职业池设置成功！', 'success');
         }
         
-        // 更新用户列表（用户中心）
+        // 更新用户列表
         function updateAllUsersList() {
             const container = document.getElementById('all-users-list');
             container.innerHTML = '';
@@ -1039,29 +1046,6 @@
             }
         }
         
-        // 更新用户列表（对排活动）
-        function updateMatchUsersList() {
-            const container = document.getElementById('match-users-list');
-            container.innerHTML = '';
-            
-            Object.entries(users).forEach(([userId, user]) => {
-                const isSignedUp = matchSignups[userId];
-                const item = document.createElement('div');
-                item.className = `user-item ${isSignedUp ? 'signed-up' : ''}`;
-                item.innerHTML = `
-                    <div class="user-info">
-                        <div class="user-name">${userId}</div>
-                        <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-            
-            if (Object.keys(users).length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999;">暂无注册用户</p>';
-            }
-        }
-        
         // 删除用户
         function deleteUser(userId) {
             if (confirm(`确定要删除用户 ${userId} 吗？`)) {
@@ -1070,8 +1054,14 @@
                 database.ref(`matchSignups/${userId}`).remove();
                 // 删除该用户在JJC队伍中的信息
                 Object.keys(jjcTeams).forEach(teamId => {
-                    database.ref(`jjcTeams/${teamId}/members/${userId}`).remove();
+                    if (jjcTeams[teamId].creator === userId) {
+                        database.ref(`jjcTeams/${teamId}`).remove();
+                    } else {
+                        database.ref(`jjcTeams/${teamId}/members/${userId}`).remove();
+                    }
                 });
+                // 重置该用户的队伍计数
+                database.ref(`userTeamCounts/${userId}`).remove();
                 showMessage('user-message', `用户 ${userId} 已删除`, 'success');
             }
         }
@@ -1089,6 +1079,54 @@
             } else {
                 document.getElementById('current-pool-info').style.display = 'none';
             }
+        }
+        
+        // 更新所有用户列表（合并显示）
+        function updateAllMatchUsers() {
+            const container = document.getElementById('all-match-users');
+            container.innerHTML = '';
+            
+            Object.entries(users).forEach(([userId, user]) => {
+                const isSignedUp = matchSignups[userId];
+                const item = document.createElement('div');
+                item.className = `user-item ${isSignedUp ? 'signed-up' : ''}`;
+                item.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-name">${userId} ${isSignedUp ? '<span style="color: #4caf50; font-weight: normal;">[已报名]</span>' : ''}</div>
+                        <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
+                    </div>
+                    <div>
+                        ${currentUser === userId ? 
+                            (isSignedUp ? 
+                                '<span style="color: #4caf50;">已报名</span>' : 
+                                '<button class="button small success" onclick="quickSignup()">快速报名</button>'
+                            ) : 
+                            ''
+                        }
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+            
+            if (Object.keys(users).length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暂无注册用户</p>';
+            }
+        }
+        
+        // 更新报名人数
+        function updateSignupCount() {
+            const count = Object.keys(matchSignups).length;
+            document.getElementById('signup-count').textContent = count;
+            document.getElementById('match-button').disabled = count < 6;
+        }
+        
+        // 快速报名
+        function quickSignup() {
+            if (!currentUser) {
+                showMessage('match-message', '请先登录', 'error');
+                return;
+            }
+            signupMatch();
         }
         
         // 报名对排
@@ -1117,13 +1155,6 @@
             
             database.ref(`matchSignups/${currentUser}`).remove();
             showMessage('match-message', '已取消报名', 'success');
-        }
-        
-        // 更新报名状态
-        function updateSignupStatus() {
-            const signupCount = Object.keys(matchSignups).length;
-            document.getElementById('signup-count').textContent = signupCount;
-            document.getElementById('match-button').disabled = signupCount < 6;
         }
         
         // 更新用户在对排页面的状态
@@ -1224,9 +1255,9 @@
             
             document.getElementById('create-team-form').style.display = 'block';
             document.getElementById('jjc-create-section').style.display = 'none';
-            document.getElementById('play-date').value = getTodayDateString();
             document.getElementById('team-tips').value = '';
-            document.getElementById('team-tips').focus();
+            document.getElementById('team-date').value = getTodayDateString();
+            document.getElementById('team-date').focus();
         }
         
         // 取消创建队伍
@@ -1242,34 +1273,41 @@
                 return;
             }
             
-            const playDate = document.getElementById('play-date').value;
+            const date = document.getElementById('team-date').value;
             const tips = document.getElementById('team-tips').value.trim();
             
-            if (!playDate) {
+            if (!date) {
                 showMessage('jjc-message', '请选择开打日期', 'error');
                 return;
             }
             
-            // 获取或初始化该用户的队伍计数
-            const currentCount = userTeamCounter[currentUser] || 0;
-            const newCount = currentCount + 1;
+            // 获取用户的队伍计数
+            const userCount = userTeamCounts[currentUser] || 0;
+            const teamNumber = userCount + 1;
             
-            // 更新计数器
-            database.ref(`userTeamCounter/${currentUser}`).set(newCount);
+            // 更新计数
+            database.ref(`userTeamCounts/${currentUser}`).set(teamNumber);
             
             const teamId = `team_${Date.now()}`;
             database.ref(`jjcTeams/${teamId}`).set({
                 id: teamId,
-                name: `${currentUser}的小队${newCount}`,
+                name: `${currentUser}的小队${teamNumber}`,
+                date: date,
                 tips: tips,
-                playDate: playDate,
                 creator: currentUser,
                 members: {},
+                dpsCount: 0,
+                healerCount: 0,
                 createdAt: firebase.database.ServerValue.TIMESTAMP
             });
             
             cancelCreateTeam();
             showMessage('jjc-message', '队伍创建成功！', 'success');
+        }
+        
+        // 判断职业类型
+        function isProfessionDPS(profession) {
+            return dpsProfessions.includes(profession);
         }
         
         // 删除队伍
@@ -1291,17 +1329,22 @@
             const sortedTeams = Object.values(jjcTeams).sort((a, b) => a.createdAt - b.createdAt);
             
             sortedTeams.forEach(team => {
-                const members = team.members || {};
-                const memberList = Object.entries(members);
-                const dpsCount = memberList.filter(([_, role]) => role !== 'healer').length;
-                const healerCount = memberList.filter(([_, role]) => role === 'healer').length;
-                const isFull = memberList.length >= 3;
+                const membersList = Object.entries(team.members || {});
+                const memberCount = membersList.length;
+                const isFull = memberCount >= 3;
                 const isCreator = currentUser && team.creator === currentUser;
-                const isMember = currentUser && members[currentUser];
+                const isMember = currentUser && team.members && team.members[currentUser];
                 
-                // 检查队伍需要什么职业
-                const needDps = dpsCount < 2;
-                const needHealer = healerCount < 1;
+                // 计算DPS和治疗数量
+                let currentDpsCount = 0;
+                let currentHealerCount = 0;
+                membersList.forEach(([id, prof]) => {
+                    if (isProfessionDPS(prof)) {
+                        currentDpsCount++;
+                    } else {
+                        currentHealerCount++;
+                    }
+                });
                 
                 const teamDiv = document.createElement('div');
                 teamDiv.className = 'team-container';
@@ -1311,24 +1354,22 @@
                 teamInfoDiv.className = 'team-item';
                 teamInfoDiv.innerHTML = `
                     <div class="team-info">
-                        <div class="team-meta-info">
-                            <span>${formatDate(team.playDate)}开打</span>
-                            <span>创建于 ${formatTime(team.createdAt)}</span>
-                        </div>
                         <div class="team-name">
                             ${team.name}
                             ${isFull ? '<span style="color: #f44336; margin-left: 8px;">[满员]</span>' : ''}
                             ${isCreator ? '<span style="color: #2196f3; margin-left: 8px;">[我创建的]</span>' : ''}
                         </div>
-                        <div class="team-tips">${team.tips || '暂无说明（注意加上开打时间和段位）'}</div>
+                        <div class="team-tips">${team.tips || '暂无说明'}</div>
+                        <div class="team-meta">
+                            开打日期：${formatDate(team.date)} | 创建时间：${formatTime(team.createdAt)}
+                        </div>
                         <div class="team-members">
-                            成员（${memberList.length}/3）：
-                            ${memberList.map(([id, prof]) => {
-                                const isHealer = healerProfessions.includes(prof);
-                                return `<span class="member-slot ${isHealer ? 'healer' : 'dps'}">${id}(${prof})</span>`;
-                            }).join('')}
-                            ${dpsCount < 2 ? `<span class="member-slot empty">需要${2 - dpsCount}个DPS</span>` : ''}
-                            ${healerCount < 1 ? '<span class="member-slot empty">需要1个奶妈</span>' : ''}
+                            成员配置（${memberCount}/3）：
+                            ${membersList.map(([id, prof]) => 
+                                `<span class="member-slot ${isProfessionDPS(prof) ? 'dps' : 'healer'}">${id}(${prof})</span>`
+                            ).join('')}
+                            ${currentDpsCount < 2 ? Array(2 - currentDpsCount).fill('<span class="member-slot empty">DPS空位</span>').join('') : ''}
+                            ${currentHealerCount < 1 ? '<span class="member-slot empty">奶妈空位</span>' : ''}
                         </div>
                     </div>
                 `;
@@ -1347,29 +1388,38 @@
                 
                 // 加入队伍区域（只在已登录、未满员且当前用户未加入时显示）
                 if (currentUser && !isFull && !isMember) {
-                    const joinSection = document.createElement('div');
-                    joinSection.className = 'join-section';
+                    const canJoinDPS = currentDpsCount < 2;
+                    const canJoinHealer = currentHealerCount < 1;
                     
-                    let availableProfessions = [];
-                    if (needDps) {
-                        availableProfessions = availableProfessions.concat(dpsProfessions);
+                    if (canJoinDPS || canJoinHealer) {
+                        const joinSection = document.createElement('div');
+                        joinSection.className = 'join-section';
+                        
+                        const availableProfessions = [];
+                        if (canJoinDPS) {
+                            availableProfessions.push(...dpsProfessions);
+                        }
+                        if (canJoinHealer) {
+                            availableProfessions.push(...healerProfessions);
+                        }
+                        
+                        joinSection.innerHTML = `
+                            <label>选择心法加入队伍：</label>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                                <select id="join-${team.id}" style="width: 150px;">
+                                    ${availableProfessions.map(prof => 
+                                        `<option value="${prof}">${prof}</option>`
+                                    ).join('')}
+                                </select>
+                                <button class="button small success" onclick="joinTeam('${team.id}')">加入队伍</button>
+                            </div>
+                            <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                                ${!canJoinDPS ? 'DPS已满 ' : ''}
+                                ${!canJoinHealer ? '奶妈已满' : ''}
+                            </div>
+                        `;
+                        teamDiv.appendChild(joinSection);
                     }
-                    if (needHealer) {
-                        availableProfessions = availableProfessions.concat(healerProfessions);
-                    }
-                    
-                    joinSection.innerHTML = `
-                        <label>选择心法加入队伍：</label>
-                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
-                            <select id="join-${team.id}" style="width: 150px;">
-                                ${availableProfessions.map(prof => 
-                                    `<option value="${prof}">${prof}</option>`
-                                ).join('')}
-                            </select>
-                            <button class="button small success" onclick="joinTeam('${team.id}')">加入队伍</button>
-                        </div>
-                    `;
-                    teamDiv.appendChild(joinSection);
                 }
                 
                 // 操作按钮区域
@@ -1426,20 +1476,27 @@
             
             const profession = selectElement.value;
             
-            // 检查队伍配置是否符合要求
+            // 检查职业类型是否还有空位
             const team = jjcTeams[teamId];
-            const members = team.members || {};
-            const memberList = Object.entries(members);
-            const dpsCount = memberList.filter(([_, role]) => !healerProfessions.includes(role)).length;
-            const healerCount = memberList.filter(([_, role]) => healerProfessions.includes(role)).length;
+            const membersList = Object.entries(team.members || {});
+            let currentDpsCount = 0;
+            let currentHealerCount = 0;
             
-            if (healerProfessions.includes(profession) && healerCount >= 1) {
-                showMessage('jjc-message', '队伍已有奶妈，请选择DPS职业', 'error');
+            membersList.forEach(([id, prof]) => {
+                if (isProfessionDPS(prof)) {
+                    currentDpsCount++;
+                } else {
+                    currentHealerCount++;
+                }
+            });
+            
+            if (isProfessionDPS(profession) && currentDpsCount >= 2) {
+                showMessage('jjc-message', 'DPS位置已满', 'error');
                 return;
             }
             
-            if (!healerProfessions.includes(profession) && dpsCount >= 2) {
-                showMessage('jjc-message', '队伍已有2个DPS，请选择奶妈职业', 'error');
+            if (!isProfessionDPS(profession) && currentHealerCount >= 1) {
+                showMessage('jjc-message', '奶妈位置已满', 'error');
                 return;
             }
             
