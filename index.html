@@ -266,16 +266,6 @@
             color: #999;
         }
 
-        .time-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            background-color: #fff3e0;
-            color: #f57c00;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-left: 8px;
-        }
-
         .pool-info {
             background-color: #e8f5e9;
             border: 1px solid #a5d6a7;
@@ -351,6 +341,14 @@
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
+        }
+
+        .join-section {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f7ff;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
         }
 
         @media (max-width: 600px) {
@@ -439,16 +437,6 @@
                 <h3>可报名用户</h3>
                 <div id="available-match-users"></div>
                 
-                <!-- 用户报名 -->
-                <div class="form-group">
-                    <label for="match-time">选择活动时间段</label>
-                    <select id="match-time">
-                        <option value="下午场">下午场（14:00-18:00）</option>
-                        <option value="晚上场">晚上场（19:00-23:00）</option>
-                        <option value="深夜场">深夜场（23:00-02:00）</option>
-                    </select>
-                </div>
-                
                 <div class="status-bar">
                     当前报名人数：<span id="signup-count">0</span> 人（需要至少6人才能开始抽签）
                 </div>
@@ -504,7 +492,7 @@
                     <div class="rule-item">
                         <h4>活动流程</h4>
                         <p>• 管理员先设置本次活动可用的职业池</p>
-                        <p>• 玩家选择时间段自行报名参加</p>
+                        <p>• 玩家自行报名参加</p>
                         <p>• 报名满6人即可开始抽签分队</p>
                         <p>• 每队固定3人：2个DPS + 1个奶妈</p>
                     </div>
@@ -552,13 +540,13 @@
         // Firebase配置 - 请替换为你自己的配置
         const firebaseConfig = {
             // 在这里填入你的Firebase配置
-            apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
-            authDomain: "user-ba917.firebaseapp.com",
-            databaseURL: "https://user-ba917-default-rtdb.firebaseio.com",
-            projectId: "user-ba917",
-            storageBucket: "user-ba917.firebasestorage.app",
-            messagingSenderId: "648289853069",
-            appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
+          apiKey: "AIzaSyAqAl228PwAygdjgmbI-B7zvpaGmgkNREE",
+          authDomain: "user-ba917.firebaseapp.com",
+          databaseURL: "https://user-ba917-default-rtdb.firebaseio.com",
+          projectId: "user-ba917",
+          storageBucket: "user-ba917.firebasestorage.app",
+          messagingSenderId: "648289853069",
+          appId: "1:648289853069:web:fbfdbd13b6023fca928cc4",
         };
 
         // 职业数据
@@ -577,6 +565,7 @@
         let matchPool = { dps: [], healers: [] };
         let matchSignups = {};
         let jjcTeams = {};
+        let teamCounter = 0; // 队伍计数器
         
         // 初始化Firebase
         function initFirebase() {
@@ -619,6 +608,11 @@
                 database.ref('jjcTeams').on('value', (snapshot) => {
                     jjcTeams = snapshot.val() || {};
                     updateTeamsList();
+                });
+                
+                // 获取队伍计数器
+                database.ref('teamCounter').on('value', (snapshot) => {
+                    teamCounter = snapshot.val() || 0;
                 });
                 
                 return true;
@@ -752,7 +746,7 @@
             showMessage('match-message', '职业池设置成功！', 'success');
         }
         
-        // 更新用户列表（修复undefined问题）
+        // 更新用户列表
         function updateAllUsersList() {
             const container = document.getElementById('all-users-list');
             container.innerHTML = '';
@@ -806,7 +800,7 @@
             }
         }
         
-        // 更新可报名用户列表（修复undefined问题）
+        // 更新可报名用户列表
         function updateAvailableMatchUsers() {
             const container = document.getElementById('available-match-users');
             container.innerHTML = '';
@@ -847,7 +841,7 @@
             signupMatch();
         }
         
-        // 报名对排
+        // 报名对排（删除时间段）
         function signupMatch() {
             if (!currentUser) {
                 showMessage('match-message', '请先登录', 'error');
@@ -859,14 +853,12 @@
                 return;
             }
             
-            const time = document.getElementById('match-time').value;
             database.ref(`matchSignups/${currentUser}`).set({
                 userId: currentUser,
-                time: time,
                 signedUpAt: firebase.database.ServerValue.TIMESTAMP
             });
             
-            showMessage('match-message', `报名成功！时间段：${time}`, 'success');
+            showMessage('match-message', `报名成功！`, 'success');
         }
         
         // 取消报名
@@ -888,7 +880,7 @@
             }
         }
         
-        // 更新已报名用户列表（修复undefined问题）
+        // 更新已报名用户列表
         function updateSignedUpUsers() {
             const container = document.getElementById('signed-up-users');
             container.innerHTML = '';
@@ -906,10 +898,7 @@
                     item.className = 'signup-item';
                     item.innerHTML = `
                         <div class="user-info">
-                            <div class="user-name">
-                                ${signup.userId}
-                                <span class="time-badge">${signup.time}</span>
-                            </div>
+                            <div class="user-name">${signup.userId}</div>
                             <div class="user-professions">超爱心法：${user.loveProfessions?.join('、') || '未设置'}</div>
                         </div>
                     `;
@@ -922,12 +911,11 @@
             }
         }
         
-        // 开始匹配（修复undefined问题）
+        // 开始匹配
         function startMatching() {
             const signupsList = Object.values(matchSignups).map(signup => ({
-                id: signup.userId,  // 确保有id字段
-                ...users[signup.userId],
-                time: signup.time
+                id: signup.userId,
+                ...users[signup.userId]
             }));
             
             if (signupsList.length < 6) {
@@ -950,8 +938,7 @@
                     team.push({
                         name: player.id,
                         role: role,
-                        profession: profession,
-                        time: player.time
+                        profession: profession
                     });
                 }
                 teams.push(team);
@@ -1002,17 +989,21 @@
             database.ref('matchSignups').remove();
         }
         
-        // 创建JJC队伍
+        // 创建JJC队伍（使用序号）
         function createTeam() {
             if (!currentUser) {
                 showMessage('jjc-message', '请先登录', 'error');
                 return;
             }
             
+            // 增加计数器
+            const newTeamNumber = teamCounter + 1;
+            database.ref('teamCounter').set(newTeamNumber);
+            
             const teamId = `team_${Date.now()}`;
             database.ref(`jjcTeams/${teamId}`).set({
                 id: teamId,
-                name: `队伍${Math.floor(Math.random() * 1000)}`,
+                name: `队伍${newTeamNumber}`,
                 tips: '',
                 creator: currentUser,
                 members: {},
@@ -1022,12 +1013,15 @@
             showMessage('jjc-message', '队伍创建成功！请编辑队伍说明', 'success');
         }
         
-        // 更新队伍列表（修复加入和编辑功能）
+        // 更新队伍列表（修复加入功能）
         function updateTeamsList() {
             const container = document.getElementById('teams-list');
             container.innerHTML = '';
             
-            Object.values(jjcTeams).forEach(team => {
+            // 按创建时间排序
+            const sortedTeams = Object.values(jjcTeams).sort((a, b) => a.createdAt - b.createdAt);
+            
+            sortedTeams.forEach(team => {
                 const memberCount = Object.keys(team.members || {}).length;
                 const isFull = memberCount >= 3;
                 const isCreator = currentUser && team.creator === currentUser;
@@ -1037,58 +1031,70 @@
                 teamDiv.className = 'team-container';
                 
                 // 队伍基本信息
-                let teamHTML = `
-                    <div class="team-item">
-                        <div class="team-info">
-                            <div class="team-name">
-                                ${team.name}
-                                ${isFull ? '<span style="color: #f44336; margin-left: 8px;">[满员]</span>' : ''}
-                                ${isCreator ? '<span style="color: #2196f3; margin-left: 8px;">[我创建的]</span>' : ''}
-                            </div>
-                            <div class="team-tips">${team.tips || '暂无说明（注意加上开打时间和段位）'}</div>
-                            <div class="team-members">
-                                成员（${memberCount}/3）：
-                                ${Object.entries(team.members || {}).map(([id, prof]) => 
-                                    `<span class="member-slot">${id}(${prof})</span>`
-                                ).join('')}
-                                ${Array(3 - memberCount).fill('<span class="member-slot empty">空位</span>').join('')}
-                            </div>
+                const teamInfoDiv = document.createElement('div');
+                teamInfoDiv.className = 'team-item';
+                teamInfoDiv.innerHTML = `
+                    <div class="team-info">
+                        <div class="team-name">
+                            ${team.name}
+                            ${isFull ? '<span style="color: #f44336; margin-left: 8px;">[满员]</span>' : ''}
+                            ${isCreator ? '<span style="color: #2196f3; margin-left: 8px;">[我创建的]</span>' : ''}
+                        </div>
+                        <div class="team-tips">${team.tips || '暂无说明（注意加上开打时间和段位）'}</div>
+                        <div class="team-members">
+                            成员（${memberCount}/3）：
+                            ${Object.entries(team.members || {}).map(([id, prof]) => 
+                                `<span class="member-slot">${id}(${prof})</span>`
+                            ).join('')}
+                            ${Array(3 - memberCount).fill('<span class="member-slot empty">空位</span>').join('')}
                         </div>
                     </div>
                 `;
+                teamDiv.appendChild(teamInfoDiv);
                 
                 // 创建者编辑区域
                 if (isCreator) {
-                    teamHTML += `
-                        <div class="edit-tips-section">
-                            <textarea id="tips-${team.id}" placeholder="注意加上开打时间和段位">${team.tips || ''}</textarea>
-                            <button class="button small" onclick="updateTeamTips('${team.id}')">更新说明</button>
-                        </div>
+                    const editSection = document.createElement('div');
+                    editSection.className = 'edit-tips-section';
+                    editSection.innerHTML = `
+                        <textarea id="tips-${team.id}" placeholder="注意加上开打时间和段位">${team.tips || ''}</textarea>
+                        <button class="button small" onclick="updateTeamTips('${team.id}')">更新说明</button>
                     `;
+                    teamDiv.appendChild(editSection);
                 }
                 
-                // 加入队伍区域
+                // 加入队伍区域（只在未满员且当前用户未加入时显示）
                 if (!isFull && currentUser && !isMember) {
-                    teamHTML += `
-                        <div style="margin-top: 10px; padding: 10px; background-color: #f5f5f5; border-radius: 8px;">
-                            <label>选择心法加入队伍：</label>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <select id="join-${team.id}" style="width: 150px;">
-                                    ${[...dpsProfessions, ...healerProfessions].map(prof => 
-                                        `<option value="${prof}">${prof}</option>`
-                                    ).join('')}
-                                </select>
-                                <button class="button small success" onclick="joinTeam('${team.id}')">加入队伍</button>
-                            </div>
+                    const joinSection = document.createElement('div');
+                    joinSection.className = 'join-section';
+                    joinSection.innerHTML = `
+                        <label>选择心法加入队伍：</label>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                            <select id="join-${team.id}" style="width: 150px;">
+                                ${[...dpsProfessions, ...healerProfessions].map(prof => 
+                                    `<option value="${prof}">${prof}</option>`
+                                ).join('')}
+                            </select>
+                            <button class="button small success" onclick="joinTeam('${team.id}')">加入队伍</button>
                         </div>
                     `;
+                    teamDiv.appendChild(joinSection);
                 }
                 
-                teamDiv.innerHTML = teamHTML;
+                // 退出队伍按钮（非创建者的成员可以退出）
+                if (isMember && !isCreator) {
+                    const leaveSection = document.createElement('div');
+                    leaveSection.style.padding = '10px';
+                    leaveSection.innerHTML = `
+                        <button class="button small danger" onclick="leaveTeam('${team.id}')">退出队伍</button>
+                    `;
+                    teamDiv.appendChild(leaveSection);
+                }
+                
                 container.appendChild(teamDiv);
             });
             
-            if (Object.keys(jjcTeams).length === 0) {
+            if (sortedTeams.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #999;">暂无队伍</p>';
             }
         }
@@ -1107,9 +1113,23 @@
                 return;
             }
             
-            const profession = document.getElementById(`join-${teamId}`).value;
+            const selectElement = document.getElementById(`join-${teamId}`);
+            if (!selectElement) {
+                showMessage('jjc-message', '加入失败，请刷新页面重试', 'error');
+                return;
+            }
+            
+            const profession = selectElement.value;
             database.ref(`jjcTeams/${teamId}/members/${currentUser}`).set(profession);
             showMessage('jjc-message', '加入队伍成功！', 'success');
+        }
+        
+        // 退出队伍
+        function leaveTeam(teamId) {
+            if (!currentUser) return;
+            
+            database.ref(`jjcTeams/${teamId}/members/${currentUser}`).remove();
+            showMessage('jjc-message', '已退出队伍', 'success');
         }
         
         // 洗牌算法
