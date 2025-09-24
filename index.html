@@ -383,6 +383,34 @@
             color: #f57c00;
         }
 
+        /* 通用模态框 */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .modal {
+            background: #fff;
+            border-radius: 10px;
+            width: min(560px, 92vw);
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal h3 {
+            margin: 0 0 12px 0;
+        }
+        .modal .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+        .text-danger { color: #d32f2f; font-size: 13px; margin-top: 6px; }
+
         @media (max-width: 600px) {
             .nav-tab {
                 font-size: 14px;
@@ -503,13 +531,40 @@
                     <div style="display: inline-flex; gap: 10px; align-items: center;">
                         <label for="jjc-date">开打日期：</label>
                         <input type="date" id="jjc-date" />
-                        <button class="button success" onclick="createTeam()">创建新队伍</button>
+                        <button class="button success" onclick="openCreateTeamModal()">创建新队伍</button>
                     </div>
                 </div>
                 
                 <!-- 队伍列表 -->
                 <h3>队伍列表</h3>
                 <div id="teams-list"></div>
+            </div>
+
+            <!-- JJC: 创建队伍模态框 -->
+            <div id="create-team-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+                <div class="modal">
+                    <h3>创建新队伍</h3>
+                    <div class="form-group" style="margin-top:8px;">
+                        <label for="create-team-tips">队伍说明</label>
+                        <textarea id="create-team-tips" placeholder="请输入队伍说明（建议包含开打时间与段位）"></textarea>
+                        <div id="create-team-error" class="text-danger" style="display:none;">请输入队伍说明</div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="button" onclick="closeCreateTeamModal()">取消</button>
+                        <button class="button success" onclick="confirmCreateTeam()">确定创建</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JJC: 组队限制提示模态框 -->
+            <div id="limit-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+                <div class="modal">
+                    <h3>无法加入队伍</h3>
+                    <div id="limit-modal-text">组合不合法：必须为 2 个 DPS + 1 个奶妈</div>
+                    <div class="modal-actions">
+                        <button class="button success" onclick="closeLimitModal()">我知道了</button>
+                    </div>
+                </div>
             </div>
             
             <!-- 活动规则页面 -->
@@ -934,6 +989,7 @@
             });
             
             showMessage('match-message', `报名成功！`, 'success');
+            updateMatchPageUserStatus();
         }
         
         // 取消报名
@@ -942,17 +998,16 @@
             
             database.ref(`matchSignups/${currentUser}`).remove();
             showMessage('match-message', '已取消报名', 'success');
+            updateMatchPageUserStatus();
         }
         
         // 更新用户在对排页面的状态
         function updateMatchPageUserStatus() {
-            if (currentUser && matchSignups[currentUser]) {
-                document.getElementById('signup-btn').style.display = 'none';
-                document.getElementById('cancel-signup-btn').style.display = 'inline-block';
-            } else {
-                document.getElementById('signup-btn').style.display = 'inline-block';
-                document.getElementById('cancel-signup-btn').style.display = 'none';
-            }
+            const isSigned = currentUser && matchSignups[currentUser];
+            document.getElementById('signup-btn').style.display = isSigned ? 'none' : 'inline-block';
+            document.getElementById('cancel-signup-btn').style.display = isSigned ? 'inline-block' : 'none';
+            // 触发列表刷新，让颜色标识即时更新
+            updateAvailableMatchUsers();
         }
         
         // 更新已报名用户列表
@@ -1064,8 +1119,21 @@
             database.ref('matchSignups').remove();
         }
         
-        // 创建JJC队伍
-        function createTeam() {
+        // 打开/关闭 创建队伍模态
+        function openCreateTeamModal() {
+            if (!currentUser) {
+                showMessage('jjc-message', '请先登录', 'error');
+                return;
+            }
+            document.getElementById('create-team-tips').value = '';
+            document.getElementById('create-team-error').style.display = 'none';
+            document.getElementById('create-team-modal').style.display = 'flex';
+        }
+        function closeCreateTeamModal() {
+            document.getElementById('create-team-modal').style.display = 'none';
+        }
+
+        function confirmCreateTeam() {
             if (!currentUser) {
                 showMessage('jjc-message', '请先登录', 'error');
                 return;
@@ -1073,10 +1141,10 @@
             // 读取开打日期，默认当天
             const dateInput = document.getElementById('jjc-date');
             const selectedDate = (dateInput && dateInput.value) ? dateInput.value : formatDateYYYYMMDD(new Date());
-            // 弹框输入队伍说明
-            const tipsInput = prompt('请输入队伍说明（建议包含开打时间与段位）', '');
-            if (tipsInput === null) {
-                // 用户取消
+            // 读取模态中的队伍说明
+            const tipsInput = (document.getElementById('create-team-tips').value || '').trim();
+            if (!tipsInput) {
+                document.getElementById('create-team-error').style.display = 'block';
                 return;
             }
             
@@ -1088,13 +1156,14 @@
             database.ref(`jjcTeams/${teamId}`).set({
                 id: teamId,
                 name: `${currentUser}的小队${newTeamNumber}`,
-                tips: (tipsInput || '').trim(),
+                tips: tipsInput,
                 creator: currentUser,
                 members: {},
                 createdAt: firebase.database.ServerValue.TIMESTAMP,
                 matchDate: selectedDate
             });
             
+            closeCreateTeamModal();
             showMessage('jjc-message', '队伍创建成功！', 'success');
         }
         
@@ -1221,6 +1290,11 @@
             showMessage('jjc-message', '队伍说明更新成功！', 'success');
         }
         
+        // 关闭限制提示
+        function closeLimitModal() {
+            document.getElementById('limit-modal').style.display = 'none';
+        }
+
         // 加入队伍（限制2个DPS、1个奶妈）
         function joinTeam(teamId) {
             if (!currentUser) {
@@ -1242,12 +1316,14 @@
             const healerCount = values.filter(p => healerProfessions.includes(p)).length;
             
             if (dpsProfessions.includes(profession) && dpsCount >= 2) {
-                alert('该队伍DPS名额已满（最多2个DPS + 1个奶妈）');
+                document.getElementById('limit-modal-text').textContent = '该队伍DPS名额已满（最多2个DPS + 1个奶妈）';
+                document.getElementById('limit-modal').style.display = 'flex';
                 showMessage('jjc-message', '该队伍DPS名额已满（最多2个）', 'error');
                 return;
             }
             if (healerProfessions.includes(profession) && healerCount >= 1) {
-                alert('该队伍奶妈名额已满（最多2个DPS + 1个奶妈）');
+                document.getElementById('limit-modal-text').textContent = '该队伍奶妈名额已满（最多2个DPS + 1个奶妈）';
+                document.getElementById('limit-modal').style.display = 'flex';
                 showMessage('jjc-message', '该队伍奶妈名额已满（最多1个）', 'error');
                 return;
             }
@@ -1257,7 +1333,8 @@
             const nextDps = nextValues.filter(p => dpsProfessions.includes(p)).length;
             const nextHealer = nextValues.filter(p => healerProfessions.includes(p)).length;
             if (nextValues.length > 3 || nextDps > 2 || nextHealer > 1) {
-                alert('组合不合法：必须为2个DPS + 1个奶妈');
+                document.getElementById('limit-modal-text').textContent = '组合不合法：必须为 2 个 DPS + 1 个奶妈';
+                document.getElementById('limit-modal').style.display = 'flex';
                 showMessage('jjc-message', '组合不合法：必须为2个DPS + 1个奶妈', 'error');
                 return;
             }
